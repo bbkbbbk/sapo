@@ -30,6 +30,7 @@ func main() {
 
 	serverHandler := server.NewHandler(bot)
 
+	e.GET("/", serverHandler.HomePage)
 	e.GET("/ping", serverHandler.PingCheck)
 	e.POST("/callback", serverHandler.Callback)
 

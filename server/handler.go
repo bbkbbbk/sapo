@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/pkg/errors"
 )
 
 type Handler struct {
@@ -23,6 +22,10 @@ func (h *Handler) returnError(err error) error {
 	return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 }
 
+func (h *Handler) HomePage(c echo.Context) error {
+	return c.JSON(http.StatusOK, "Hello this is sapo")
+}
+
 func (h *Handler) PingCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, "[PingCheck]: ok")
 }
@@ -30,7 +33,11 @@ func (h *Handler) PingCheck(c echo.Context) error {
 func (h *Handler) Callback(c echo.Context) error {
 	events, err := h.botClient.ParseRequest(c.Request())
 	if err != nil {
-		return h.returnError(errors.Wrap(err, "[Callback]: unable to parse request"))
+		if err == linebot.ErrInvalidSignature {
+			return c.JSON(http.StatusBadRequest, linebot.ErrInvalidSignature.Error())
+		} else {
+			return c.JSON(http.StatusInternalServerError, "[Callback]: unable to parse request")
+		}
 	}
 
 	for _, event := range events {

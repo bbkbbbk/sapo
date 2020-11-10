@@ -51,5 +51,5 @@ func (h *Handler) Callback(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(200, "")
+	return c.JSON(http.StatusOK, "")
 }

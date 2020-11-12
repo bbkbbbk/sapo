@@ -13,7 +13,8 @@ import (
 type Service interface {
 	CreateAccount(uid, code string) error
 	GetSpotifyAuthURL(state string) string
-	LINEEventsHandler(req *http.Request) error
+	ParseLINERequest(req *http.Request) ([]*linebot.Event, error)
+	LINEEventsHandler(events []*linebot.Event) error
 	RandomString(n int) string
 }
 
@@ -80,21 +81,16 @@ func (s *service) CreateAccount(uid, code string) error {
 	return nil
 }
 
-func (s *service) LINEEventsHandler(req *http.Request) error {
-	events, err := s.lineService.GetEvents(req)
-	if err != nil {
-		if err == linebot.ErrInvalidSignature {
-			return errors.Wrapf(err, "[LINEEventsHandler]: invalid signature %v", linebot.ErrInvalidSignature.Error())
-		}
+func (s *service) ParseLINERequest(req *http.Request) ([]*linebot.Event, error) {
+	return s.lineService.ParseRequest(req)
+}
 
-		return errors.Wrapf(err, "[LINEEventsHandler]: unable to parse request")
-	}
-
+func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 	for _, event := range events {
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
-				if err = s.lineService.TextMsgHandler(message.Text, event.ReplyToken); err != nil {
+				if err := s.lineService.TextMsgHandler(message.Text, event.ReplyToken); err != nil {
 					return errors.Wrap(err, "[LINEEventsHandler]: unable to reply message %v")
 				}
 			}

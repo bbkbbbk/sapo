@@ -10,6 +10,7 @@ import (
 
 type LINEService interface {
 	GetEvents(req *http.Request) ([]*linebot.Event, error)
+	ParseRequest(req *http.Request) ([]*linebot.Event, error)
 	TextMsgHandler(msg, token string) error
 }
 
@@ -20,7 +21,7 @@ type lineService struct {
 func NewLINEService(secret, token string) LINEService {
 	bot, err := linebot.New(secret, token)
 	if err != nil {
-		logrus.Warnf("[init]: unable to initialize line line client %v", err)
+		logrus.Warnf("[NewLINEService]: unable to initialize line line client %v", err)
 	}
 
 	return &lineService{
@@ -35,6 +36,10 @@ func (l *lineService) GetEvents(req *http.Request) ([]*linebot.Event, error) {
 	}
 
 	return events, nil
+}
+
+func (l *lineService) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
+	return l.lineClient.ParseRequest(req)
 }
 
 func (l *lineService) TextMsgHandler(msg, token string) error {

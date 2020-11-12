@@ -16,10 +16,10 @@ const (
 )
 
 var (
-	errorInvalidSpotifyAuthCode  = errors.New("invalid spotifyService authorization code")
-	errorInvalidSpotifyAuthState = errors.New("invalid spotifyService auth state")
+	errorInvalidSpotifyAuthCode  = errors.New("invalid spotify authorization code")
+	errorInvalidSpotifyAuthState = errors.New("invalid spotify auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
-	errorUnableLogIn             = errors.New("unable to login to spotifyService")
+	errorUnableLogIn             = errors.New("unable to login to spotify")
 )
 
 type Handler struct {
@@ -41,7 +41,12 @@ func (h *Handler) HomePage(c echo.Context) error {
 }
 
 func (h *Handler) LINECallback(c echo.Context) error {
-	err := h.service.LINEEventsHandler(c.Request())
+	events, err := h.service.ParseLINERequest(c.Request())
+	if err != nil {
+		return h.returnError(err)
+	}
+
+	err = h.service.LINEEventsHandler(events)
 	if err != nil {
 		return h.returnError(err)
 	}
@@ -58,7 +63,10 @@ func (h *Handler) SignUp(c echo.Context) error {
 	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
 	c.SetCookie(cookie)
 
-	c.Redirect(302, h.service.GetSpotifyAuthURL(state))
+	err := c.Redirect(302, h.service.GetSpotifyAuthURL(state))
+	if err != nil {
+		return h.returnError(errors.Wrap(err, "[SignUp]: unable to redirect"))
+	}
 
 	return c.JSON(http.StatusOK, "")
 }

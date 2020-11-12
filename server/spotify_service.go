@@ -92,7 +92,7 @@ func (s *spotifyService) RequestToken(code string) (string, string, error) {
 	defer func() {
 		err := res.Body.Close()
 		if err != nil {
-			logrus.Warnf("[RequestToken]: unable to close response body", err)
+			logrus.Warn("[RequestToken]: unable to close response body", err)
 		}
 	}()
 	if err != nil {

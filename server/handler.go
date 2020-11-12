@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -31,6 +32,7 @@ func NewHandler(s Service) Handler {
 }
 
 func (h *Handler) returnError(err error) error {
+	logrus.Error(err.Error())
 	return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 }
 

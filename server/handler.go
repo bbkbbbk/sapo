@@ -9,7 +9,12 @@ import (
 	"github.com/labstack/echo"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	defaultCookieExpires = 60
+	uid                  = "123456789"
 )
 
 var (
@@ -17,8 +22,6 @@ var (
 	errorInvalidSpotifyAuthState = errors.New("invalid spotify auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
 	errorUnableLogIn             = errors.New("unable to login to spotify")
-
-	defaultCookieExpires = 60
 )
 
 type Handler struct {
@@ -71,13 +74,13 @@ func (h *Handler) PingCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, "[PingCheck]: ok")
 }
 
-func (h *Handler) Callback(c echo.Context) error {
+func (h *Handler) LINEMessageCallback(c echo.Context) error {
 	events, err := h.botClient.ParseRequest(c.Request())
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
 			return c.JSON(http.StatusBadRequest, linebot.ErrInvalidSignature.Error())
 		} else {
-			return c.JSON(http.StatusInternalServerError, "[Callback]: unable to parse request")
+			return c.JSON(http.StatusInternalServerError, "[LINEMessageCallback]: unable to parse request")
 		}
 	}
 
@@ -86,7 +89,7 @@ func (h *Handler) Callback(c echo.Context) error {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if _, err = h.botClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message.Text)).Do(); err != nil {
-					log.Err(err)
+					logrus.Errorf("[LINEMessageCallback]: unable to reply message %v", err)
 				}
 			}
 		}
@@ -98,19 +101,15 @@ func (h *Handler) Callback(c echo.Context) error {
 func (h *Handler) SignUp(c echo.Context) error {
 	state := RandStringBytesMaskImprSrcSB(16)
 
-	cookie := http.Cookie{
-		Name:    AuthState,
-		Value:   state,
-		Expires: time.Unix(int64(defaultCookieExpires), 0),
-	}
-	c.SetCookie(&cookie)
+	cookie := new(http.Cookie)
+	cookie.Name = AuthState
+	cookie.Value = state
+	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
+	c.SetCookie(cookie)
 
-	err := h.spotify.Login(state)
-	if err != nil {
-		return h.returnError(errors.Wrap(err, "[SignUp]: unable to sign up"))
-	}
+	c.Redirect(302, h.spotify.GetAuthURL(state))
 
-	return c.JSON(http.StatusOK, "")
+	return nil
 }
 
 func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
@@ -136,6 +135,11 @@ func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
 
 	if state != storedState.Value {
 		return h.returnError(errorInvalidSpotifyAuthState)
+	}
+
+	err = h.spotify.GetTokenRequest(uid, code)
+	if err != nil {
+		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to get token from spotify"))
 	}
 
 	return c.JSON(http.StatusOK, "")

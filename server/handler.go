@@ -10,12 +10,10 @@ import (
 
 const (
 	defaultCookieExpires = 60
-
-	//TODO: user real uid when integrate with LIFF
-	uid = "123456789"
 )
 
 var (
+	errorInvalidUID              = errors.New("invalid LINE user id")
 	errorInvalidSpotifyAuthCode  = errors.New("invalid spotify authorization code")
 	errorInvalidSpotifyAuthState = errors.New("invalid spotify auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
@@ -55,15 +53,18 @@ func (h *Handler) LINECallback(c echo.Context) error {
 }
 
 func (h *Handler) SignUp(c echo.Context) error {
-	state := h.service.RandomString(16)
+	uid := c.QueryParam("uid")
+	if uid == "" {
+		return h.returnError(errorInvalidUID)
+	}
 
 	cookie := new(http.Cookie)
 	cookie.Name = AuthState
-	cookie.Value = state
+	cookie.Value = uid
 	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
 	c.SetCookie(cookie)
 
-	err := c.Redirect(302, h.service.GetSpotifyAuthURL(state))
+	err := c.Redirect(302, h.service.GetSpotifyAuthURL(uid))
 	if err != nil {
 		return h.returnError(errors.Wrap(err, "[SignUp]: unable to redirect"))
 	}
@@ -82,8 +83,8 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 		return h.returnError(errorInvalidSpotifyAuthCode)
 	}
 
-	state := c.QueryParam("state")
-	if state == "" {
+	uid := c.QueryParam("state")
+	if uid == "" {
 		return h.returnError(errorInvalidSpotifyAuthState)
 	}
 
@@ -92,7 +93,7 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 		return h.returnError(errorUnableToGetCookie)
 	}
 
-	if state != storedState.Value {
+	if uid != storedState.Value {
 		return h.returnError(errorInvalidSpotifyAuthState)
 	}
 

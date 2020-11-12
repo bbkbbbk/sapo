@@ -9,7 +9,6 @@ import (
 )
 
 type LINEService interface {
-	GetEvents(req *http.Request) ([]*linebot.Event, error)
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
 	TextMsgHandler(msg, token string) error
 }
@@ -27,15 +26,6 @@ func NewLINEService(secret, token string) LINEService {
 	return &lineService{
 		lineClient: bot,
 	}
-}
-
-func (l *lineService) GetEvents(req *http.Request) ([]*linebot.Event, error) {
-	events, err := l.lineClient.ParseRequest(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return events, nil
 }
 
 func (l *lineService) ParseRequest(req *http.Request) ([]*linebot.Event, error) {

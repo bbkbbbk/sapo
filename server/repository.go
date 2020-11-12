@@ -43,12 +43,12 @@ func (r *repository) CreateAccount(acc Account) (*Account, error) {
 
 	doc, err := bson.Marshal(acc)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateAccount]: unable to marshal account")
+		return nil, errors.Wrap(err, "[r.CreateAccount]: unable to marshal account")
 	}
 
 	_, err = r.db.Collection(collNameAccounts).InsertOne(ctx, doc)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateAccount]: failed to insert account")
+		return nil, errors.Wrap(err, "[r.CreateAccount]: failed to insert account")
 	}
 
 	return &acc, nil

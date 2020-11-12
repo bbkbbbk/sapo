@@ -1,7 +1,6 @@
 package main
 
 import (
-	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
 	"os"
 
 	"github.com/labstack/echo"
@@ -9,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
 	"github.com/bbkbbbk/sapo/server"
 )
 

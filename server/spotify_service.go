@@ -109,19 +109,19 @@ func (s *spotifyService) RequestToken(code string) (string, string, error) {
 
 func (s *spotifyService) getTokenFromResponse(res *http.Response) (string, string, error) {
 	if res.StatusCode != http.StatusOK {
-		logrus.Warn("[GetTokenFromResponse]: unable to make a success response")
+		logrus.Warn("[getTokenFromResponse]: unable to make a success response")
 		return "", "", errorUnableToGetToken
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return "", "", errors.Wrap(err, "[GetTokenFromResponse]: unable to read response body")
+		return "", "", errors.Wrap(err, "[getTokenFromResponse]: unable to read response body")
 	}
 
 	var token responseTokenBody
 	err = json.Unmarshal(body, &token)
 	if err != nil {
-		return "", "", errors.Wrap(err, "[GetTokenFromResponse]: unable to unmarshal response body")
+		return "", "", errors.Wrap(err, "[getTokenFromResponse]: unable to unmarshal response body")
 	}
 
 	accessToken := token.AccessToken

@@ -4,8 +4,6 @@ import (
 	"os"
 
 	"github.com/labstack/echo"
-	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
@@ -14,9 +12,8 @@ import (
 
 var (
 	db      *mongo.Database
-	line    *linebot.Client
+	line    server.LINEService
 	spotify server.SpotifyService
-	err     error
 )
 
 func init() {
@@ -30,13 +27,10 @@ func init() {
 }
 
 func init() {
-	line, err = linebot.New(
+	line = server.NewLINEService(
 		os.Getenv("CHANNEL_SECRET"),
 		os.Getenv("CHANNEL_TOKEN"),
 	)
-	if err != nil {
-		logrus.Warnf("[init]: unable to initialize line line client %v", err)
-	}
 }
 
 func init() {

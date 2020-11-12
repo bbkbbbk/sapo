@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -18,10 +16,10 @@ const (
 )
 
 var (
-	errorInvalidSpotifyAuthCode  = errors.New("invalid spotifyClient authorization code")
-	errorInvalidSpotifyAuthState = errors.New("invalid spotifyClient auth state")
+	errorInvalidSpotifyAuthCode  = errors.New("invalid spotifyService authorization code")
+	errorInvalidSpotifyAuthState = errors.New("invalid spotifyService auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
-	errorUnableLogIn             = errors.New("unable to login to spotifyClient")
+	errorUnableLogIn             = errors.New("unable to login to spotifyService")
 )
 
 type Handler struct {
@@ -43,24 +41,9 @@ func (h *Handler) HomePage(c echo.Context) error {
 }
 
 func (h *Handler) LINECallback(c echo.Context) error {
-	events, err := h.botClient.ParseRequest(c.Request())
+	err := h.service.LINEEventsHandler(c.Request())
 	if err != nil {
-		if err == linebot.ErrInvalidSignature {
-			return c.JSON(http.StatusBadRequest, linebot.ErrInvalidSignature.Error())
-		} else {
-			return c.JSON(http.StatusInternalServerError, "[LINEMessageCallback]: unable to parse request")
-		}
-	}
-
-	for _, event := range events {
-		if event.Type == linebot.EventTypeMessage {
-			switch message := event.Message.(type) {
-			case *linebot.TextMessage:
-				if _, err = h.botClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message.Text)).Do(); err != nil {
-					logrus.Errorf("[LINEMessageCallback]: unable to reply message %v", err)
-				}
-			}
-		}
+		return h.returnError(err)
 	}
 
 	return c.JSON(http.StatusOK, "")

@@ -10,7 +10,7 @@ import (
 
 type LINEService interface {
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
-	TextMsgHandler(msg, token string) error
+	EchoMsg(msg, token string) error
 }
 
 type lineService struct {
@@ -32,17 +32,13 @@ func (l *lineService) ParseRequest(req *http.Request) ([]*linebot.Event, error) 
 	return l.lineClient.ParseRequest(req)
 }
 
-func (l *lineService) TextMsgHandler(msg, token string) error {
-	replyMsg := l.echoMsg(msg)
-
+func (l *lineService) EchoMsg(msg, token string) error {
+	replyMsg := linebot.NewTextMessage(msg)
 	_, err := l.lineClient.ReplyMessage(token, replyMsg).Do()
+
 	if err != nil {
 		return errors.Wrap(err, "[TextMsgHandler]: unable to send a reply text message")
 	}
 
 	return nil
-}
-
-func (l *lineService) echoMsg(msg string) *linebot.TextMessage {
-	return linebot.NewTextMessage(msg)
 }

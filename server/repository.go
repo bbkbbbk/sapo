@@ -33,7 +33,7 @@ type Account struct {
 	RefreshToken string
 }
 
-func (repo *repository) defaultContext() (context.Context, context.CancelFunc) {
+func (r *repository) defaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*defaultTimeout)
 }
 

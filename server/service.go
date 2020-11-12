@@ -63,15 +63,17 @@ func (s *service) GetSpotifyAuthURL(state string) string {
 }
 
 func (s *service) CreateAccount(uid, code string) error {
+	now := time.Now()
 	accToken, refToken, err := s.spotifyService.RequestToken(code)
 	if err != nil {
 		return errors.Wrap(err, "[s.CreateAccount]: unable to get token from spotify")
 	}
-
+	
 	acc := Account{
 		UID:          uid,
 		AccessToken:  accToken,
 		RefreshToken: refToken,
+		CreatedAt:    &now,
 	}
 
 	if _, err := s.repository.CreateAccount(acc); err != nil {

@@ -1,9 +1,7 @@
 package server
 
 import (
-	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -14,52 +12,26 @@ import (
 
 const (
 	defaultCookieExpires = 60
-	uid                  = "123456789"
+
+	//TODO: user real uid when integrate with LIFF
+	uid = "123456789"
 )
 
 var (
-	errorInvalidSpotifyAuthCode  = errors.New("invalid spotify authorization code")
-	errorInvalidSpotifyAuthState = errors.New("invalid spotify auth state")
+	errorInvalidSpotifyAuthCode  = errors.New("invalid spotifyClient authorization code")
+	errorInvalidSpotifyAuthState = errors.New("invalid spotifyClient auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
-	errorUnableLogIn             = errors.New("unable to login to spotify")
+	errorUnableLogIn             = errors.New("unable to login to spotifyClient")
 )
 
 type Handler struct {
-	botClient *linebot.Client
-	spotify   SpotifyService
+	service Service
 }
 
-func NewHandler(b *linebot.Client, s SpotifyService) Handler {
+func NewHandler(s Service) Handler {
 	return Handler{
-		botClient: b,
-		spotify:   s,
+		service: s,
 	}
-}
-
-func RandStringBytesMaskImprSrcSB(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	const (
-		letterIdxBits = 6
-		letterIdxMask = 1<<letterIdxBits - 1
-		letterIdxMax  = 63 / letterIdxBits
-	)
-
-	var src = rand.NewSource(time.Now().UnixNano())
-	sb := strings.Builder{}
-	sb.Grow(n)
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			sb.WriteByte(letterBytes[idx])
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-
-	return sb.String()
 }
 
 func (h *Handler) returnError(err error) error {
@@ -70,11 +42,7 @@ func (h *Handler) HomePage(c echo.Context) error {
 	return c.JSON(http.StatusOK, "Hello this is sapo")
 }
 
-func (h *Handler) PingCheck(c echo.Context) error {
-	return c.JSON(http.StatusOK, "[PingCheck]: ok")
-}
-
-func (h *Handler) LINEMessageCallback(c echo.Context) error {
+func (h *Handler) LINECallback(c echo.Context) error {
 	events, err := h.botClient.ParseRequest(c.Request())
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
@@ -99,7 +67,7 @@ func (h *Handler) LINEMessageCallback(c echo.Context) error {
 }
 
 func (h *Handler) SignUp(c echo.Context) error {
-	state := RandStringBytesMaskImprSrcSB(16)
+	state := h.service.RandomString(16)
 
 	cookie := new(http.Cookie)
 	cookie.Name = AuthState
@@ -107,12 +75,12 @@ func (h *Handler) SignUp(c echo.Context) error {
 	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
 	c.SetCookie(cookie)
 
-	c.Redirect(302, h.spotify.GetAuthURL(state))
+	c.Redirect(302, h.service.GetSpotifyAuthURL(state))
 
-	return nil
+	return c.JSON(http.StatusOK, "")
 }
 
-func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
+func (h *Handler) SpotifyCallback(c echo.Context) error {
 	errParam := c.QueryParam("error")
 	if errParam != "" {
 		return h.returnError(errors.Wrapf(errorUnableLogIn, "[SpotifyLoginCallback]: unable to login to spotify due to %v", errParam))
@@ -137,9 +105,9 @@ func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
 		return h.returnError(errorInvalidSpotifyAuthState)
 	}
 
-	err = h.spotify.GetTokenRequest(uid, code)
+	err = h.service.CreateAccount(uid, code)
 	if err != nil {
-		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to get token from spotify"))
+		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to create account"))
 	}
 
 	return c.JSON(http.StatusOK, "")

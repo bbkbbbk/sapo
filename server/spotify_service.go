@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -18,9 +17,10 @@ import (
 
 const (
 	defaultTimeout = 30
-	scope          = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
+	scopes         = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
 	redirectURL    = "http://localhost:8080/spotify-callback"
-	AuthState      = "spotify-auth-state"
+
+	AuthState = "spotify-auth-state"
 )
 
 var (
@@ -29,14 +29,12 @@ var (
 
 type SpotifyService interface {
 	GetAuthURL(state string) string
-	GetTokenRequest(uid, code string) error
-	GetTokenResponse(res *http.Response) (string, string, error)
+	RequestToken(code string) (string, string, error)
 }
 
 type spotifyService struct {
 	ClientID    string
 	ClintSecret string
-	repository  Repository
 }
 
 type responseTokenBody struct {
@@ -47,11 +45,10 @@ type responseTokenBody struct {
 	RefreshToken   string `json:"refresh_token"`
 }
 
-func NewSpotifyService(id, secret string, r Repository) SpotifyService {
+func NewSpotifyService(id, secret string) SpotifyService {
 	return &spotifyService{
 		ClientID:    id,
 		ClintSecret: secret,
-		repository:  r,
 	}
 }
 
@@ -65,13 +62,13 @@ func (s *spotifyService) newAuthHeader() string {
 
 func (s *spotifyService) GetAuthURL(state string) string {
 	spotifyURL := "https://accounts.spotify.com/authorize"
-	scopes := url.QueryEscape(scope)
-	url := fmt.Sprintf("%s?client_id=%s&scope=%s&response_type=code&redirect_uri=%s&state=%s", spotifyURL, s.ClientID, scopes, redirectURL, state)
+	scope := url.QueryEscape(scopes)
+	url := fmt.Sprintf("%s?client_id=%s&scope=%s&response_type=code&redirect_uri=%s&state=%s", spotifyURL, s.ClientID, scope, redirectURL, state)
 
 	return url
 }
 
-func (s *spotifyService) GetTokenRequest(uid, code string) error {
+func (s *spotifyService) RequestToken(code string) (string, string, error) {
 	spotifyURL := "https://accounts.spotify.com/api/token"
 
 	form := url.Values{}
@@ -81,7 +78,7 @@ func (s *spotifyService) GetTokenRequest(uid, code string) error {
 
 	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return errors.Wrap(err, "[GetTokenRequest]: unable to create request")
+		return "", "", errors.Wrap(err, "[RequestToken]: unable to create request")
 	}
 
 	req.Header.Add("Authorization", s.newAuthHeader())
@@ -95,41 +92,36 @@ func (s *spotifyService) GetTokenRequest(uid, code string) error {
 	defer func() {
 		err := res.Body.Close()
 		if err != nil {
-			logrus.Warnf("[GetTokenRequest]: unable to close response body", err)
+			logrus.Warnf("[RequestToken]: unable to close response body", err)
 		}
 	}()
 	if err != nil {
-		return errors.Wrap(err, "[GetTokenRequest]: unable to get token from spotify")
+		return "", "", errors.Wrap(err, "[RequestToken]: unable to request token from spotify")
 	}
 
-	accToken, refToken, err := s.GetTokenResponse(res)
-	acc := Account{
-		UID:          uid,
-		AccessToken:  accToken,
-		RefreshToken: refToken,
-	}
-	if _, err := s.repository.CreateAccount(acc); err != nil {
-		return errors.Wrap(err, "[GetTokenRequest]: unable to create account")
+	accToken, refToken, err := s.getTokenFromResponse(res)
+	if err != nil {
+		return "", "", errors.Wrap(err, "[RequestToken]: unable to get token response from spotify")
 	}
 
-	return nil
+	return accToken, refToken, nil
 }
 
-func (s *spotifyService) GetTokenResponse(res *http.Response) (string, string, error) {
+func (s *spotifyService) getTokenFromResponse(res *http.Response) (string, string, error) {
 	if res.StatusCode != http.StatusOK {
-		logrus.Warn("[GetTokenResponse]: unable to make a success response")
+		logrus.Warn("[GetTokenFromResponse]: unable to make a success response")
 		return "", "", errorUnableToGetToken
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		return "", "", errors.Wrap(err, "[GetTokenFromResponse]: unable to read response body")
 	}
 
 	var token responseTokenBody
 	err = json.Unmarshal(body, &token)
 	if err != nil {
-		return "", "", errors.Wrap(err, "[GetTokenResponse]: unable to unmarshal response body")
+		return "", "", errors.Wrap(err, "[GetTokenFromResponse]: unable to unmarshal response body")
 	}
 
 	accessToken := token.AccessToken

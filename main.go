@@ -42,17 +42,19 @@ func init() {
 func main() {
 	e := echo.New()
 
-	serverHandler := server.NewHandler(bot, spotify)
 	repository := server.NewRepository(db)
 	spotify = server.NewSpotifyService(
 		os.Getenv("MY_CLIENT_ID"),
 		os.Getenv("MY_CLIENT_SECRET"),
 		repository,
 	)
+	serverHandler := server.NewHandler(bot, spotify)
 
 	e.GET("/", serverHandler.HomePage)
 	e.GET("/ping", serverHandler.PingCheck)
-	e.POST("/callback", serverHandler.Callback)
+	e.POST("/callback", serverHandler.LINEMessageCallback)
+	e.GET("/signup", serverHandler.SignUp)
+	e.GET("/spotify-callback", serverHandler.SpotifyLoginCallback)
 
 	port := ":" + os.Getenv("APP_PORT")
 	e.Logger.Fatal(e.Start(port))

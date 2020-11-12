@@ -1,15 +1,18 @@
 package server
 
 import (
-	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+)
+
+const (
+	defaultCookieExpires = 60
+
+	//TODO: user real uid when integrate with LIFF
+	uid = "123456789"
 )
 
 var (
@@ -17,46 +20,16 @@ var (
 	errorInvalidSpotifyAuthState = errors.New("invalid spotify auth state")
 	errorUnableToGetCookie       = errors.New("unable to get cookie")
 	errorUnableLogIn             = errors.New("unable to login to spotify")
-
-	defaultCookieExpires = 60
 )
 
 type Handler struct {
-	botClient *linebot.Client
-	spotify   SpotifyService
+	service Service
 }
 
-func NewHandler(b *linebot.Client, s SpotifyService) Handler {
+func NewHandler(s Service) Handler {
 	return Handler{
-		botClient: b,
-		spotify:   s,
+		service: s,
 	}
-}
-
-func RandStringBytesMaskImprSrcSB(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	const (
-		letterIdxBits = 6
-		letterIdxMask = 1<<letterIdxBits - 1
-		letterIdxMax  = 63 / letterIdxBits
-	)
-
-	var src = rand.NewSource(time.Now().UnixNano())
-	sb := strings.Builder{}
-	sb.Grow(n)
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			sb.WriteByte(letterBytes[idx])
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-
-	return sb.String()
 }
 
 func (h *Handler) returnError(err error) error {
@@ -67,53 +40,38 @@ func (h *Handler) HomePage(c echo.Context) error {
 	return c.JSON(http.StatusOK, "Hello this is sapo")
 }
 
-func (h *Handler) PingCheck(c echo.Context) error {
-	return c.JSON(http.StatusOK, "[PingCheck]: ok")
-}
-
-func (h *Handler) Callback(c echo.Context) error {
-	events, err := h.botClient.ParseRequest(c.Request())
+func (h *Handler) LINECallback(c echo.Context) error {
+	events, err := h.service.ParseLINERequest(c.Request())
 	if err != nil {
-		if err == linebot.ErrInvalidSignature {
-			return c.JSON(http.StatusBadRequest, linebot.ErrInvalidSignature.Error())
-		} else {
-			return c.JSON(http.StatusInternalServerError, "[Callback]: unable to parse request")
-		}
+		return h.returnError(err)
 	}
 
-	for _, event := range events {
-		if event.Type == linebot.EventTypeMessage {
-			switch message := event.Message.(type) {
-			case *linebot.TextMessage:
-				if _, err = h.botClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message.Text)).Do(); err != nil {
-					log.Err(err)
-				}
-			}
-		}
+	err = h.service.LINEEventsHandler(events)
+	if err != nil {
+		return h.returnError(err)
 	}
 
 	return c.JSON(http.StatusOK, "")
 }
 
 func (h *Handler) SignUp(c echo.Context) error {
-	state := RandStringBytesMaskImprSrcSB(16)
+	state := h.service.RandomString(16)
 
-	cookie := http.Cookie{
-		Name:    AuthState,
-		Value:   state,
-		Expires: time.Unix(int64(defaultCookieExpires), 0),
-	}
-	c.SetCookie(&cookie)
+	cookie := new(http.Cookie)
+	cookie.Name = AuthState
+	cookie.Value = state
+	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
+	c.SetCookie(cookie)
 
-	err := h.spotify.Login(state)
+	err := c.Redirect(302, h.service.GetSpotifyAuthURL(state))
 	if err != nil {
-		return h.returnError(errors.Wrap(err, "[SignUp]: unable to sign up"))
+		return h.returnError(errors.Wrap(err, "[SignUp]: unable to redirect"))
 	}
 
 	return c.JSON(http.StatusOK, "")
 }
 
-func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
+func (h *Handler) SpotifyCallback(c echo.Context) error {
 	errParam := c.QueryParam("error")
 	if errParam != "" {
 		return h.returnError(errors.Wrapf(errorUnableLogIn, "[SpotifyLoginCallback]: unable to login to spotify due to %v", errParam))
@@ -136,6 +94,11 @@ func (h *Handler) SpotifyLoginCallback(c echo.Context) error {
 
 	if state != storedState.Value {
 		return h.returnError(errorInvalidSpotifyAuthState)
+	}
+
+	err = h.service.CreateAccount(uid, code)
+	if err != nil {
+		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to create account"))
 	}
 
 	return c.JSON(http.StatusOK, "")

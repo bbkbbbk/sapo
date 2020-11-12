@@ -4,8 +4,6 @@ import (
 	"os"
 
 	"github.com/labstack/echo"
-	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
@@ -13,21 +11,10 @@ import (
 )
 
 var (
-	bot     *linebot.Client
 	db      *mongo.Database
+	line    server.LINEService
 	spotify server.SpotifyService
-	err     error
 )
-
-func init() {
-	bot, err = linebot.New(
-		os.Getenv("CHANNEL_SECRET"),
-		os.Getenv("CHANNEL_TOKEN"),
-	)
-	if err != nil {
-		log.Err(err)
-	}
-}
 
 func init() {
 	db = pkgMongo.NewMongo(pkgMongo.Config{
@@ -39,20 +26,27 @@ func init() {
 	})
 }
 
-func main() {
-	e := echo.New()
+func init() {
+	line = server.NewLINEService(
+		os.Getenv("CHANNEL_SECRET"),
+		os.Getenv("CHANNEL_TOKEN"),
+	)
+}
 
-	serverHandler := server.NewHandler(bot, spotify)
-	repository := server.NewRepository(db)
+func init() {
 	spotify = server.NewSpotifyService(
 		os.Getenv("MY_CLIENT_ID"),
 		os.Getenv("MY_CLIENT_SECRET"),
-		repository,
 	)
+}
 
-	e.GET("/", serverHandler.HomePage)
-	e.GET("/ping", serverHandler.PingCheck)
-	e.POST("/callback", serverHandler.Callback)
+func main() {
+	e := echo.New()
+
+	repository := server.NewRepository(db)
+	service := server.NewService(line, spotify, repository)
+	serverHandler := server.NewHandler(service)
+	server.RoutesRegister(e, serverHandler)
 
 	port := ":" + os.Getenv("APP_PORT")
 	e.Logger.Fatal(e.Start(port))

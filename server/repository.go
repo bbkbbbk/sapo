@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/pkg/errors"
@@ -28,12 +29,13 @@ func NewRepository(db *mongo.Database) Repository {
 }
 
 type Account struct {
-	UID          string
-	AccessToken  string
-	RefreshToken string
+	UID          string     `json:"uid" bson:"uid"`
+	AccessToken  string     `json:"accessToken" bson:"accessToken"`
+	RefreshToken string     `json:"refreshToken" bson:"refreshToken"`
+	CreatedAt    *time.Time `json:"createdAt" bson:"createdAt"`
 }
 
-func (repo *repository) defaultContext() (context.Context, context.CancelFunc) {
+func (r *repository) defaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*defaultTimeout)
 }
 
@@ -43,13 +45,15 @@ func (r *repository) CreateAccount(acc Account) (*Account, error) {
 
 	doc, err := bson.Marshal(acc)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateAccount]: unable to marshal account")
+		return nil, errors.Wrap(err, "[r.CreateAccount]: unable to marshal account")
 	}
 
 	_, err = r.db.Collection(collNameAccounts).InsertOne(ctx, doc)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateAccount]: failed to insert account")
+		return nil, errors.Wrap(err, "[r.CreateAccount]: failed to insert account")
 	}
+
+	logrus.Printf("account created: %v", acc)
 
 	return &acc, nil
 }

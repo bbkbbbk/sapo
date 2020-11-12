@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,13 +23,13 @@ type Config struct {
 }
 
 func NewMongo(c Config) *mongo.Database {
-	log.Print("[main]: initializing mongo connection")
+	logrus.Print("[main]: initializing mongo connection")
 
 	uri := fmt.Sprintf("mongodb://%s:%s@%s:27017/?authSource=%v", c.Username, c.Password, c.Host, c.AuthSource)
 
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Err(errorUnableToConnectToDatabase)
+		logrus.Warn(errorUnableToConnectToDatabase)
 	}
 	db := client.Database(c.Database)
 

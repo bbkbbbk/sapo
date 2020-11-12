@@ -10,7 +10,7 @@ services:
       - $GOPATH/pkg/mod:/go/pkg/mod
     working_dir: /go/src/github.com/bbkbbbk/sapo
     ports:
-      - 9990:9990
+      - 8080:8080
     env_file:
       - .env.local
     command: go run main.go

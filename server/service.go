@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -15,7 +13,6 @@ import (
 const (
 	defaultTimeout = 30
 
-	textEventSignUp = "signup"
 	textEventEcho   = "echo"
 )
 
@@ -28,13 +25,15 @@ type Service interface {
 }
 
 type service struct {
+	basedURL       string
 	lineService    LINEService
 	spotifyService SpotifyService
 	repository     Repository
 }
 
-func NewService(line LINEService, spotify SpotifyService, repo Repository) Service {
+func NewService(url string, line LINEService, spotify SpotifyService, repo Repository) Service {
 	return &service{
+		basedURL:       url,
 		lineService:    line,
 		spotifyService: spotify,
 		repository:     repo,
@@ -115,33 +114,10 @@ func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 
 func (s *service) textEventsHandler(uid, msg, token string) error {
 	switch msg {
-	case textEventSignUp:
-		if err := s.textEventSignUp(uid); err != nil {
-			return errors.Wrap(err, "[textEventsHandler]: unable to signup")
-		}
 	case textEventEcho:
 		if err := s.lineService.EchoMsg(msg, token); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send echo message")
 		}
-	}
-
-	return nil
-}
-
-func (s *service) textEventSignUp(uid string) error {
-	url := fmt.Sprintf("https://sapo-wb87j.ondigitalocean.app/signup?uid=%s", uid)
-	client := &http.Client{
-		Timeout: time.Second * defaultTimeout,
-	}
-	res, err := client.Get(url)
-	defer func() {
-		err := res.Body.Close()
-		if err != nil {
-			logrus.Warn("[TextEventsHandler]: unable to close response body", err)
-		}
-	}()
-	if err != nil {
-		return errors.Wrap(err, "[TextEventsHandler]: unable to signup")
 	}
 
 	return nil

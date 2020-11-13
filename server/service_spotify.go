@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	scopes         = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
-	redirectURL    = "https://sapo-wb87j.ondigitalocean.app/spotify-callback"
+	scopes = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
 
 	AuthState = "spotify-auth-state"
 )
@@ -34,6 +33,7 @@ type SpotifyService interface {
 type spotifyService struct {
 	ClientID    string
 	ClintSecret string
+	CallbackURL string
 }
 
 type responseTokenBody struct {
@@ -44,10 +44,12 @@ type responseTokenBody struct {
 	RefreshToken   string `json:"refresh_token"`
 }
 
-func NewSpotifyService(id, secret string) SpotifyService {
+func NewSpotifyService(id, secret, url string) SpotifyService {
+	callbackURL := fmt.Sprintf("%s/spotify-callback", url)
 	return &spotifyService{
 		ClientID:    id,
 		ClintSecret: secret,
+		CallbackURL: callbackURL,
 	}
 }
 
@@ -61,10 +63,11 @@ func (s *spotifyService) newAuthHeader() string {
 
 func (s *spotifyService) GetAuthURL(state string) string {
 	spotifyURL := "https://accounts.spotify.com/authorize"
-	scope := url.QueryEscape(scopes)
-	url := fmt.Sprintf("%s?client_id=%s&scope=%s&response_type=code&redirect_uri=%s&state=%s", spotifyURL, s.ClientID, scope, redirectURL, state)
 
-	return url
+	scope := url.QueryEscape(scopes)
+	path := fmt.Sprintf("%s?client_id=%s&scope=%s&response_type=code&redirect_uri=%s&state=%s", spotifyURL, s.ClientID, scope, s.CallbackURL, state)
+
+	return path
 }
 
 func (s *spotifyService) RequestToken(code string) (string, string, error) {
@@ -73,7 +76,7 @@ func (s *spotifyService) RequestToken(code string) (string, string, error) {
 	form := url.Values{}
 	form.Add("grant_type", "authorization_code")
 	form.Add("code", code)
-	form.Add("redirect_uri", redirectURL)
+	form.Add("redirect_uri", s.CallbackURL)
 
 	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
 	if err != nil {

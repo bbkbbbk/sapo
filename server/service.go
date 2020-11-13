@@ -52,9 +52,15 @@ func (s *service) CreateAccount(uid, code string) error {
 		return errors.Wrap(err, "[s.CreateAccount]: unable to get token from spotify")
 	}
 
+	profile, err := s.spotifyService.GetUserProfile(accToken)
+	if err != nil {
+		return errors.Wrap(err, "[s.CreateAccount]: unable to get spotify user profile")
+	}
+	spotifyId := profile.ID
+
 	acc := Account{
 		UID:          uid,
-		AccessToken:  accToken,
+		SpotifyID:    spotifyId,
 		RefreshToken: refToken,
 		CreatedAt:    &now,
 	}
@@ -116,14 +122,29 @@ func (s *service) LINELinkUserToDefaultRichMenu(uid string) error {
 	return nil
 }
 
-func (s *service) getUserSpotifyToken(uid string) (string, string, error) {
+func (s *service) GetAccountByUID(uid string) (*Account, error) {
 	acc, err := s.repository.GetAccountByUID(uid)
 	if err != nil {
-		return "", "", errors.Wrap(err, "[GetUserSpotifyToken]: unable to get user account token")
+		return nil, errors.Wrap(err, "[GetUserSpotifyToken]: unable to get user account token")
 	}
 
-	accToken := acc.AccessToken
-	refToken := acc.RefreshToken
+	return acc, nil
+}
 
-	return accToken, refToken, nil
+func (s *service) CreateRecommendedPlaylistForUser(uid string) error {
+	acc, err := s.GetAccountByUID(uid)
+	if err != nil {
+		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get user account token")
+	}
+	spotifyId := acc.SpotifyID
+	refreshToken := acc.RefreshToken
+
+	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
+
+	err = s.spotifyService.CreateRecommendedPlaylistForUser(accessToken, spotifyId)
+	if err != nil {
+		return errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
+	}
+
+	return nil
 }

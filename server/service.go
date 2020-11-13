@@ -140,6 +140,10 @@ func (s *service) CreateRecommendedPlaylistForUser(uid string) error {
 	refreshToken := acc.RefreshToken
 
 	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
+	if err != nil {
+		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
+
+	}
 
 	err = s.spotifyService.CreateRecommendedPlaylistForUser(accessToken, spotifyId)
 	if err != nil {

@@ -1,13 +1,13 @@
 package server
 
 import (
-	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
+
+	"github.com/bbkbbbk/sapo/spotify"
 )
 
 const (
@@ -23,49 +23,22 @@ type Service interface {
 	LINEEventsHandler(events []*linebot.Event) error
 	LINELinkUserToLoginRichMenu(uid string) error
 	LINELinkUserToDefaultRichMenu(uid string) error
-	RandomString(n int) string
 }
 
 type service struct {
 	basedURL       string
 	lineService    LINEService
-	spotifyService SpotifyService
+	spotifyService spotify.SpotifyService
 	repository     Repository
 }
 
-func NewService(url string, line LINEService, spotify SpotifyService, repo Repository) Service {
+func NewService(url string, line LINEService, spotify spotify.SpotifyService, repo Repository) Service {
 	return &service{
 		basedURL:       url,
 		lineService:    line,
 		spotifyService: spotify,
 		repository:     repo,
 	}
-}
-
-func (s *service) RandomString(n int) string {
-	const (
-		letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		letterIdxBits = 6
-		letterIdxMask = 1<<letterIdxBits - 1
-		letterIdxMax  = 63 / letterIdxBits
-	)
-
-	var src = rand.NewSource(time.Now().UnixNano())
-	sb := strings.Builder{}
-	sb.Grow(n)
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			sb.WriteByte(letterBytes[idx])
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-
-	return sb.String()
 }
 
 func (s *service) GetSpotifyAuthURL(state string) string {

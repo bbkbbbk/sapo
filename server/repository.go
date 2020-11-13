@@ -16,6 +16,7 @@ const (
 
 type Repository interface {
 	CreateAccount(acc Account) (*Account, error)
+	GetAccountByUID (uid string) (*Account, error)
 }
 
 type repository struct {
@@ -54,6 +55,23 @@ func (r *repository) CreateAccount(acc Account) (*Account, error) {
 	}
 
 	logrus.Printf("account created: %v", acc)
+
+	return &acc, nil
+}
+
+func (r *repository) GetAccountByUID (uid string) (*Account, error) {
+	ctx, cancel := r.defaultContext()
+	defer cancel()
+
+	filter := bson.M{
+		"uid": uid,
+	}
+
+	var acc Account
+	err := r.db.Collection(collNameAccounts).FindOne(ctx, filter).Decode(&acc)
+	if err != nil {
+		return nil, errors.Wrapf(err, "[r.GetAccountByUID]: unable to retrieve account with uid %v", uid)
+	}
 
 	return &acc, nil
 }

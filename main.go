@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/labstack/echo/middleware"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
@@ -45,7 +46,7 @@ func init() {
 func main() {
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{os.Getenv("CORS_ALLOW_ORIGIN")},
+		AllowOrigins: strings.Split(os.Getenv("CORS_ALLOW_ORIGIN"), ","),
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		AllowMethods: []string{http.MethodOptions, http.MethodGet, http.MethodPost, http.MethodPut},
 	}))

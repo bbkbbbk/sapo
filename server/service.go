@@ -13,7 +13,7 @@ import (
 const (
 	defaultTimeout = 30
 
-	textEventEcho   = "echo"
+	textEventEcho = "echo"
 )
 
 type Service interface {
@@ -21,6 +21,8 @@ type Service interface {
 	GetSpotifyAuthURL(state string) string
 	ParseLINERequest(req *http.Request) ([]*linebot.Event, error)
 	LINEEventsHandler(events []*linebot.Event) error
+	LINELinkUserToLoginRichMenu(uid string) error
+	LINELinkUserToDefaultRichMenu(uid string) error
 	RandomString(n int) string
 }
 
@@ -118,6 +120,24 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 		if err := s.lineService.EchoMsg(msg, token); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send echo message")
 		}
+	}
+
+	return nil
+}
+
+func (s *service) LINELinkUserToLoginRichMenu(uid string) error {
+	err := s.lineService.LinkUserToLoginRichMenu(uid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) LINELinkUserToDefaultRichMenu(uid string) error {
+	err := s.lineService.LinkUserToDefaultRichMenu(uid)
+	if err != nil {
+		return err
 	}
 
 	return nil

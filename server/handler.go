@@ -60,11 +60,6 @@ func (h *Handler) SignUp(c echo.Context) error {
 		return h.returnError(errorInvalidUID)
 	}
 
-	name := c.QueryParam("name")
-	if name == "" {
-		name = "to sapo"
-	}
-
 	cookie := new(http.Cookie)
 	cookie.Name = AuthState
 	cookie.Value = uid
@@ -76,7 +71,7 @@ func (h *Handler) SignUp(c echo.Context) error {
 		return h.returnError(errors.Wrap(err, "[SignUp]: unable to redirect"))
 	}
 
-	return c.JSON(http.StatusOK, "login successfully welcome " + name)
+	return c.JSON(http.StatusOK, "")
 }
 
 func (h *Handler) SpotifyCallback(c echo.Context) error {
@@ -109,5 +104,10 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to create account"))
 	}
 
-	return c.JSON(http.StatusOK, "")
+	err = h.service.LINELinkUserToDefaultRichMenu(uid)
+	if err != nil {
+		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to link user to rich menu"))
+	}
+
+	return c.JSON(http.StatusOK, "login successfully welcome to sapo :D")
 }

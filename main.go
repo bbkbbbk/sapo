@@ -17,6 +17,7 @@ var (
 	basedURL string
 	db       *mongo.Database
 	line     server.LINEService
+	richMenu server.LINERichMenuMetadata
 	spotify  server.SpotifyService
 )
 
@@ -35,9 +36,17 @@ func init() {
 }
 
 func init() {
+	richMenu = server.LINERichMenuMetadata{
+		Login:   os.Getenv("RICH_MENU_LOGIN"),
+		Default: os.Getenv("RICH_MENU_DEFAULT"),
+	}
+}
+
+func init() {
 	line = server.NewLINEService(
 		os.Getenv("CHANNEL_SECRET"),
 		os.Getenv("CHANNEL_TOKEN"),
+		richMenu,
 	)
 }
 

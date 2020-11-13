@@ -3,6 +3,7 @@ module github.com/bbkbbbk/sapo
 go 1.15
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/line/line-bot-sdk-go v7.6.0+incompatible

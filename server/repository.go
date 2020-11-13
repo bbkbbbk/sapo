@@ -16,7 +16,7 @@ const (
 
 type Repository interface {
 	CreateAccount(acc Account) (*Account, error)
-	GetAccountByUID (uid string) (*Account, error)
+	GetAccountByUID(uid string) (*Account, error)
 }
 
 type repository struct {
@@ -31,7 +31,7 @@ func NewRepository(db *mongo.Database) Repository {
 
 type Account struct {
 	UID          string     `json:"uid" bson:"uid"`
-	AccessToken  string     `json:"accessToken" bson:"accessToken"`
+	SpotifyID    string     `json:"spotifyId" bson:"spotifyId"`
 	RefreshToken string     `json:"refreshToken" bson:"refreshToken"`
 	CreatedAt    *time.Time `json:"createdAt" bson:"createdAt"`
 }
@@ -59,7 +59,7 @@ func (r *repository) CreateAccount(acc Account) (*Account, error) {
 	return &acc, nil
 }
 
-func (r *repository) GetAccountByUID (uid string) (*Account, error) {
+func (r *repository) GetAccountByUID(uid string) (*Account, error) {
 	ctx, cancel := r.defaultContext()
 	defer cancel()
 

@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	defaultTimeout = 30
 	scopes         = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
 	redirectURL    = "https://sapo-wb87j.ondigitalocean.app/spotify-callback"
 

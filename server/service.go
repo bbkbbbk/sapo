@@ -13,6 +13,8 @@ import (
 )
 
 const (
+	defaultTimeout = 30
+
 	textEventSignUp = "signup"
 	textEventEcho   = "echo"
 )
@@ -115,11 +117,11 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 	switch msg {
 	case textEventSignUp:
 		if err := s.textEventSignUp(uid); err != nil {
-			return errors.Wrap(err, "[TextEventsHandler]: unable to signup")
+			return errors.Wrap(err, "[textEventsHandler]: unable to signup")
 		}
 	case textEventEcho:
 		if err := s.lineService.EchoMsg(msg, token); err != nil {
-			return errors.Wrap(err, "[TextEventsHandler]: unable to send echo message")
+			return errors.Wrap(err, "[textEventsHandler]: unable to send echo message")
 		}
 	}
 

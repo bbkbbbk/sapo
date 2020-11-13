@@ -115,3 +115,15 @@ func (s *service) LINELinkUserToDefaultRichMenu(uid string) error {
 
 	return nil
 }
+
+func (s *service) getUserSpotifyToken(uid string) (string, string, error) {
+	acc, err := s.repository.GetAccountByUID(uid)
+	if err != nil {
+		return "", "", errors.Wrap(err, "[GetUserSpotifyToken]: unable to get user account token")
+	}
+
+	accToken := acc.AccessToken
+	refToken := acc.RefreshToken
+
+	return accToken, refToken, nil
+}

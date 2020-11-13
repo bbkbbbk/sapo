@@ -37,7 +37,7 @@ func (l *lineService) EchoMsg(msg, token string) error {
 	_, err := l.lineClient.ReplyMessage(token, replyMsg).Do()
 
 	if err != nil {
-		return errors.Wrap(err, "[TextMsgHandler]: unable to send a reply text message")
+		return errors.Wrap(err, "[EchoMsg]: unable to send a reply text message")
 	}
 
 	return nil

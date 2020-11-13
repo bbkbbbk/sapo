@@ -19,7 +19,7 @@ var (
 	db             *mongo.Database
 	line           server.LINEService
 	richMenu       server.LINERichMenuMetadata
-	spotifyService spotify.SpotifyService
+	spotifyService spotify.Service
 )
 
 func init() {

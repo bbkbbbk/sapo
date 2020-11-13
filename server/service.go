@@ -28,11 +28,11 @@ type Service interface {
 type service struct {
 	basedURL       string
 	lineService    LINEService
-	spotifyService spotify.SpotifyService
+	spotifyService spotify.Service
 	repository     Repository
 }
 
-func NewService(url string, line LINEService, spotify spotify.SpotifyService, repo Repository) Service {
+func NewService(url string, line LINEService, spotify spotify.Service, repo Repository) Service {
 	return &service{
 		basedURL:       url,
 		lineService:    line,

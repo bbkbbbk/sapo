@@ -29,7 +29,7 @@ var (
 	errorInvalidSeed      = errors.New("invalid spotify seed")
 )
 
-type SpotifyService interface {
+type Service interface {
 	GetAuthURL(state string) string
 	RequestToken(code string) (string, string, error)
 	RequestAccessTokenFromRefreshToken(token string) (string, error)
@@ -37,7 +37,7 @@ type SpotifyService interface {
 	CreateRecommendedPlaylistForUser(token, uid string) error
 }
 
-type spotifyService struct {
+type service struct {
 	ClientID    string
 	ClintSecret string
 	CallbackURL string
@@ -51,16 +51,16 @@ type responseTokenBody struct {
 	RefreshToken   string `json:"refresh_token"`
 }
 
-func NewSpotifyService(id, secret, url string) SpotifyService {
+func NewSpotifyService(id, secret, url string) Service {
 	callbackURL := fmt.Sprintf("%s/spotify-callback", url)
-	return &spotifyService{
+	return &service{
 		ClientID:    id,
 		ClintSecret: secret,
 		CallbackURL: callbackURL,
 	}
 }
 
-func (s *spotifyService) makeRequest(req *http.Request) ([]byte, error) {
+func (s *service) makeRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{
 		Timeout: time.Second * defaultTimeout,
 	}
@@ -89,7 +89,7 @@ func (s *spotifyService) makeRequest(req *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func (s *spotifyService) newAuthHeader() string {
+func (s *service) newAuthHeader() string {
 	raw := fmt.Sprintf("%s:%s", s.ClientID, s.ClintSecret)
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))
 	authHeader := fmt.Sprintf("Basic %s", encoded)
@@ -97,11 +97,11 @@ func (s *spotifyService) newAuthHeader() string {
 	return authHeader
 }
 
-func (s *spotifyService) newAuthAccessHeader(token string) string {
+func (s *service) newAuthAccessHeader(token string) string {
 	return fmt.Sprintf("Bearer %s", token)
 }
 
-func (s *spotifyService) GetAuthURL(state string) string {
+func (s *service) GetAuthURL(state string) string {
 	spotifyURL := "https://accounts.spotify.com/authorize"
 
 	scope := url.QueryEscape(scopes)
@@ -110,7 +110,7 @@ func (s *spotifyService) GetAuthURL(state string) string {
 	return path
 }
 
-func (s *spotifyService) RequestToken(code string) (string, string, error) {
+func (s *service) RequestToken(code string) (string, string, error) {
 	spotifyURL := "https://accounts.spotify.com/api/token"
 
 	form := url.Values{}
@@ -143,7 +143,7 @@ func (s *spotifyService) RequestToken(code string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func (s *spotifyService) RequestAccessTokenFromRefreshToken(token string) (string, error) {
+func (s *service) RequestAccessTokenFromRefreshToken(token string) (string, error) {
 	spotifyURL := "https://accounts.spotify.com/api/token"
 
 	form := url.Values{}
@@ -174,7 +174,7 @@ func (s *spotifyService) RequestAccessTokenFromRefreshToken(token string) (strin
 	return accessToken, nil
 }
 
-func (s *spotifyService) GetSeeds(token string) ([]string, error) {
+func (s *service) GetSeeds(token string) ([]string, error) {
 	spotifyURL := "https://api.spotify.com/v1/me/player/recently-played?limit=50"
 
 	req, err := http.NewRequest("GET", spotifyURL, nil)
@@ -205,7 +205,7 @@ func (s *spotifyService) GetSeeds(token string) ([]string, error) {
 	return seedTracks, nil
 }
 
-func (s *spotifyService) GetRecommendationsBasedOnSeeds(token string, seeds []string) ([]string, error) {
+func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) ([]string, error) {
 	if len(seeds) > LimitSeedSize {
 		return nil, errorInvalidSeed
 	}
@@ -242,7 +242,7 @@ func (s *spotifyService) GetRecommendationsBasedOnSeeds(token string, seeds []st
 	return uris, nil
 }
 
-func (s *spotifyService) CreatePlaylistForUser(token, uid string) (string, error) {
+func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists", uid)
 	name := fmt.Sprintf("Tracks for you %s", time.Now().Format("2000-05-19"))
 
@@ -273,7 +273,7 @@ func (s *spotifyService) CreatePlaylistForUser(token, uid string) (string, error
 	return id, nil
 }
 
-func (s *spotifyService) AddTracksToPlaylist(token, id string, uris []string) error {
+func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
 	urisParam := strings.Join(uris, ",")
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks?uris=%s", id, urisParam)
 
@@ -292,7 +292,7 @@ func (s *spotifyService) AddTracksToPlaylist(token, id string, uris []string) er
 	return nil
 }
 
-func (s *spotifyService) CreateRecommendedPlaylistForUser(token, uid string) error {
+func (s *service) CreateRecommendedPlaylistForUser(token, uid string) error {
 	accessToken, err := s.RequestAccessTokenFromRefreshToken(token)
 	if err != nil {
 		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
@@ -321,7 +321,7 @@ func (s *spotifyService) CreateRecommendedPlaylistForUser(token, uid string) err
 	return nil
 }
 
-func (s *spotifyService) GetUserProfile(token string) (*User, error) {
+func (s *service) GetUserProfile(token string) (*User, error) {
 	spotifyURL := "https://api.spotify.com/v1/me"
 
 	req, err := http.NewRequest("GET", spotifyURL, nil)

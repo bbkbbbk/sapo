@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

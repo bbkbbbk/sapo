@@ -14,10 +14,15 @@ import (
 )
 
 var (
-	db      *mongo.Database
-	line    server.LINEService
-	spotify server.SpotifyService
+	basedURL string
+	db       *mongo.Database
+	line     server.LINEService
+	spotify  server.SpotifyService
 )
+
+func init() {
+	basedURL = os.Getenv("BASED_URL_APP")
+}
 
 func init() {
 	db = pkgMongo.NewMongo(pkgMongo.Config{
@@ -40,6 +45,7 @@ func init() {
 	spotify = server.NewSpotifyService(
 		os.Getenv("MY_CLIENT_ID"),
 		os.Getenv("MY_CLIENT_SECRET"),
+		basedURL,
 	)
 }
 
@@ -52,7 +58,7 @@ func main() {
 	}))
 
 	repository := server.NewRepository(db)
-	service := server.NewService(line, spotify, repository)
+	service := server.NewService(basedURL, line, spotify, repository)
 	serverHandler := server.NewHandler(service)
 	server.RoutesRegister(e, serverHandler)
 

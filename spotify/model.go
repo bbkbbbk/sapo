@@ -1,5 +1,13 @@
 package spotify
 
+type User struct {
+	ID     string       `json:"id"`
+	Name   string       `json:"display_name"`
+	Email  string       `json:"email"`
+	Images []Image      `json:"images"`
+	URL    ExternalURLs `json:"external_urls"`
+}
+
 type Track struct {
 	ID         string       `json:"id"`
 	Name       string       `json:"name"`
@@ -63,7 +71,7 @@ type SimplifiedTracks struct {
 // PlayHistoryTrack represents items inside response from getting user currently played tracks
 type PlayHistoryTrack struct {
 	Track    SimplifiedObject `json:"track"`
-	PlayedAt string          `json:"played_at"`
+	PlayedAt string           `json:"played_at"`
 }
 
 // PlayHistoryObject represent object response from getting user currently played tracks

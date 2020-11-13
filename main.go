@@ -14,10 +14,10 @@ import (
 )
 
 var (
+	basedURL string
 	db       *mongo.Database
 	line     server.LINEService
 	spotify  server.SpotifyService
-	basedURL string
 )
 
 func init() {

@@ -204,7 +204,7 @@ func (s *spotifyService) GetRecommendationsBasedOnSeeds(token string, seeds []st
 	limit := 25
 	seedTracks := strings.Join(seeds, ",")
 
-	path := fmt.Sprintf("%s?limit=%s&seed_tracks=%s", spotifyURL, limit, seedTracks)
+	path := fmt.Sprintf("%s?limit=%d&seed_tracks=%s", spotifyURL, limit, seedTracks)
 
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {

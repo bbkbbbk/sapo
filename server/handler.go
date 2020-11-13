@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bbkbbbk/sapo/spotify"
 )
 
 const (
@@ -61,7 +63,7 @@ func (h *Handler) SignUp(c echo.Context) error {
 	}
 
 	cookie := new(http.Cookie)
-	cookie.Name = AuthState
+	cookie.Name = spotify.AuthState
 	cookie.Value = uid
 	cookie.Expires = time.Now().Add(defaultCookieExpires * time.Second)
 	c.SetCookie(cookie)
@@ -90,7 +92,7 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 		return h.returnError(errorInvalidSpotifyAuthState)
 	}
 
-	storedState, err := c.Cookie(AuthState)
+	storedState, err := c.Cookie(spotify.AuthState)
 	if err != nil {
 		return h.returnError(errorUnableToGetCookie)
 	}

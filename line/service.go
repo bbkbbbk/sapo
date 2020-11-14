@@ -122,12 +122,7 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 }
 
 func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error){
-	jsonTemplate, err := template.ToJson()
-	if err != nil {
-		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to marshal flex template")
-	}
-
-	container, err := linebot.UnmarshalFlexMessageJSON(jsonTemplate)
+	container, err := linebot.UnmarshalFlexMessageJSON(template.ToJson())
 	if err != nil {
 		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
 	}

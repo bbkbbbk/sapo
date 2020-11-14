@@ -13,7 +13,7 @@ type FlexTemplate struct {
 	Color       string
 }
 
-func (f *FlexTemplate) ToJson() []byte {
+func (f *FlexTemplate) ToString() string {
 	template := fmt.Sprintf(
 		`{
 			  "type": "bubble",
@@ -82,5 +82,5 @@ func (f *FlexTemplate) ToJson() []byte {
 			  }
 			}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
 
-	return []byte(template)
+	return template
 }

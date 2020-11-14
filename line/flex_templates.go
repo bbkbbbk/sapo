@@ -3,10 +3,20 @@ package line
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
-func CreatePlaylistFlexTemplate(name, des, url, imgUrl string) ([]byte, error) {
+type FlexTemplate struct {
+	Header string
+	Text string
+	ButtonLabel string
+	URLAction string
+	ImageURL string
+	Color string
+}
+
+func (f *FlexTemplate) ToJson() ([]byte, error) {
 	template := fmt.Sprintf(
 		`{
 				  "type": "bubble",
@@ -80,7 +90,7 @@ func CreatePlaylistFlexTemplate(name, des, url, imgUrl string) ([]byte, error) {
 									"type": "button",
 									"action": {
 									  "type": "uri",
-									  "label": "go to playlist",
+									  "label": "%s",
 									  "uri": "%s"
 									},
 									"color": "#ffffff"
@@ -96,16 +106,17 @@ func CreatePlaylistFlexTemplate(name, des, url, imgUrl string) ([]byte, error) {
 						"offsetStart": "0px",
 						"offsetEnd": "0px",
 						"paddingAll": "10px",
-						"backgroundColor": "#373C41CC"
+						"backgroundColor": "%s"
 					  }
 					],
 					"paddingAll": "0px"
 				  }
-				}`, imgUrl, name, des, url)
-	b, err := json.Marshal(template)
+				}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
+
+	jsonTemplate, err := json.Marshal(template)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreatePlaylistFlex]: unable to marshal template")
+		return nil, errors.Wrap(err, "[ToFlexComponent]: unable to marshal template")
 	}
 
-	return b, nil
+	return jsonTemplate, nil
 }

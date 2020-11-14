@@ -69,6 +69,14 @@ type SimplifiedTracks struct {
 	Tracks []SimplifiedObject `json:"tracks"`
 }
 
+type Playlist struct {
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
+}
+
 // PlayHistoryTrack represents items inside response from getting user currently played tracks
 type PlayHistoryTrack struct {
 	Track    SimplifiedObject `json:"track"`

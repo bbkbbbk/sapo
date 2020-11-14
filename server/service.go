@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/bbkbbbk/sapo/line"
 	"net/http"
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
 
+	"github.com/bbkbbbk/sapo/line"
 	"github.com/bbkbbbk/sapo/spotify"
 )
 
@@ -98,16 +98,21 @@ func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 func (s *service) textEventsHandler(uid, msg, token string) error {
 	switch msg {
 	case textEventEcho:
-		if err := s.lineService.SendMessage(msg, token); err != nil {
+		if err := s.lineService.SendTextMessage(msg, token); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
 	case textEventCreatePlaylist:
-		playlistUrl, err := s.CreateRecommendedPlaylistForUser(uid)
+		playlist, err := s.CreateRecommendedPlaylistForUser(uid)
 		if err != nil {
 			return errors.Wrapf(err, "[textEventsHandler]: unable to create recommended playlist to user id %s", uid)
 		}
 
-		if err := s.lineService.SendMessage(playlistUrl, token); err != nil {
+		flex, err := s.lineService.CreatePlaylistFlexMsg(*playlist)
+		if err != nil {
+			return errors.Wrapf(err, "[textEventsHandler]: unable to create flex message")
+		}
+
+		if err := s.lineService.SendFlexMessage(token, flex); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
 	}
@@ -142,18 +147,18 @@ func (s *service) GetAccountByUID(uid string) (*Account, error) {
 	return acc, nil
 }
 
-func (s *service) CreateRecommendedPlaylistForUser(uid string) (string, error) {
+func (s *service) CreateRecommendedPlaylistForUser(uid string) (*spotify.Playlist, error) {
 	acc, err := s.GetAccountByUID(uid)
 	if err != nil {
-		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get user account token")
+		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get user account token")
 	}
 	spotifyId := acc.SpotifyID
 	refreshToken := acc.RefreshToken
 
-	playlistUrl, err := s.spotifyService.CreateRecommendedPlaylistForUser(refreshToken, spotifyId)
+	playlist, err := s.spotifyService.CreateRecommendedPlaylistForUser(refreshToken, spotifyId)
 	if err != nil {
-		return "", errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
+		return nil, errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
 	}
 
-	return playlistUrl, nil
+	return playlist, nil
 }

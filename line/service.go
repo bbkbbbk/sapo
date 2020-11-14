@@ -8,6 +8,8 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bbkbbbk/sapo/spotify"
 )
 
 const (
@@ -16,9 +18,11 @@ const (
 
 type Service interface {
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
-	SendMessage(msg, token string) error
+	SendTextMessage(msg, token string) error
+	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
+	CreatePlaylistFlexMsg(playlist spotify.Playlist) (*linebot.FlexMessage, error)
 }
 
 type service struct {
@@ -53,12 +57,20 @@ func (s *service) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
 	return s.lineClient.ParseRequest(req)
 }
 
-func (s *service) SendMessage(msg, token string) error {
+func (s *service) SendTextMessage(msg, token string) error {
 	replyMsg := linebot.NewTextMessage(msg)
 	_, err := s.lineClient.ReplyMessage(token, replyMsg).Do()
-
 	if err != nil {
-		return errors.Wrap(err, "[EchoMsg]: unable to send a reply text message")
+		return errors.Wrap(err, "[SendMessage]: unable to send a reply text message")
+	}
+
+	return nil
+}
+
+func (s *service) SendFlexMessage(token string, msg *linebot.FlexMessage) error {
+	_, err := s.lineClient.ReplyMessage(token, msg).Do()
+	if err != nil {
+		return errors.Wrap(err, "[SendMessage]: unable to send a reply text message")
 	}
 
 	return nil
@@ -109,4 +121,25 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 	}
 
 	return nil
+}
+
+func (s *service) CreatePlaylistFlexMsg(playlist spotify.Playlist) (*linebot.FlexMessage, error){
+	template, err := CreatePlaylistFlexTemplate(
+		playlist.Name,
+		playlist.Description,
+		playlist.ExternalURLs.Spotify,
+		playlist.Images[0].URL,
+		)
+	if err != nil {
+		return nil, errors.Wrap(err, "[CreatePlaylistFlexMsg]: unable to create flex template")
+	}
+
+	container, err := linebot.UnmarshalFlexMessageJSON(template)
+	if err != nil {
+		return nil, errors.Wrap(err, "[CreatePlaylistFlexMsg]: unable to unmarshal flex template")
+	}
+
+	msg := linebot.NewFlexMessage("playlist msg", container)
+
+	return msg, nil
 }

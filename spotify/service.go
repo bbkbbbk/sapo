@@ -32,9 +32,10 @@ var (
 type Service interface {
 	GetAuthURL(state string) string
 	RequestToken(code string) (string, string, error)
+	RequestAccessTokenFromRefreshToken(token string) (string, error)
 	GetUserProfile(token string) (*User, error)
 	GetPlaylistByID(token, id string) (*Playlist, error)
-	CreateRecommendedPlaylistForUser(token, uid string) (*Playlist, error)
+	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 }
 
 type service struct {
@@ -298,38 +299,28 @@ func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
 	return nil
 }
 
-func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (*Playlist, error) {
-	accessToken, err := s.RequestAccessTokenFromRefreshToken(token)
+func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, error) {
+	seeds, err := s.GetSeeds(token)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
 	}
 
-	seeds, err := s.GetSeeds(accessToken)
+	uris, err := s.GetRecommendationsBasedOnSeeds(token, seeds)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
 	}
 
-	uris, err := s.GetRecommendationsBasedOnSeeds(accessToken, seeds)
+	playlistId, err := s.CreatePlaylistForUser(token, uid)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
 	}
 
-	playlistId, err := s.CreatePlaylistForUser(accessToken, uid)
+	err = s.AddTracksToPlaylist(token, playlistId, uris)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
 	}
 
-	err = s.AddTracksToPlaylist(accessToken, playlistId, uris)
-	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
-	}
-
-	playlist, err := s.GetPlaylistByID(token, playlistId)
-	if err != nil {
-		return nil, errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get playlist detail")
-	}
-
-	return playlist, nil
+	return playlistId, nil
 }
 
 func (s *service) GetUserProfile(token string) (*User, error) {

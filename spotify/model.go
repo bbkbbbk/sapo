@@ -45,7 +45,7 @@ type Image struct {
 }
 
 type ExternalURLs struct {
-	Spotify string `json:"spotify"`
+	URL string `json:"spotify"`
 }
 
 type TrackPagingObject struct {

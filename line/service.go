@@ -8,8 +8,6 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/bbkbbbk/sapo/spotify"
 )
 
 const (
@@ -22,7 +20,7 @@ type Service interface {
 	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
-	CreatePlaylistFlexMsg(playlist spotify.Playlist) (*linebot.FlexMessage, error)
+	CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error)
 }
 
 type service struct {
@@ -57,11 +55,11 @@ func (s *service) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
 	return s.lineClient.ParseRequest(req)
 }
 
-func (s *service) SendTextMessage(msg, token string) error {
+func (s *service) SendTextMessage(token, msg string) error {
 	replyMsg := linebot.NewTextMessage(msg)
 	_, err := s.lineClient.ReplyMessage(token, replyMsg).Do()
 	if err != nil {
-		return errors.Wrap(err, "[SendMessage]: unable to send a reply text message")
+		return errors.Wrap(err, "[SendTextMessage]: unable to send a reply text message")
 	}
 
 	return nil
@@ -70,7 +68,7 @@ func (s *service) SendTextMessage(msg, token string) error {
 func (s *service) SendFlexMessage(token string, msg *linebot.FlexMessage) error {
 	_, err := s.lineClient.ReplyMessage(token, msg).Do()
 	if err != nil {
-		return errors.Wrap(err, "[SendMessage]: unable to send a reply text message")
+		return errors.Wrap(err, "[SendFlexMessage]: unable to send a reply flex message")
 	}
 
 	return nil
@@ -123,23 +121,18 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 	return nil
 }
 
-func (s *service) CreatePlaylistFlexMsg(playlist spotify.Playlist) (*linebot.FlexMessage, error){
-	template, err := CreatePlaylistFlexTemplate(
-		playlist.Name,
-		playlist.Description,
-		playlist.ExternalURLs.Spotify,
-		playlist.Images[0].URL,
-		)
+func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error){
+	jsonTemplate, err := template.ToJson()
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreatePlaylistFlexMsg]: unable to create flex template")
+		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to marshal flex template")
 	}
 
-	container, err := linebot.UnmarshalFlexMessageJSON(template)
+	container, err := linebot.UnmarshalFlexMessageJSON(jsonTemplate)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreatePlaylistFlexMsg]: unable to unmarshal flex template")
+		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
 	}
 
-	msg := linebot.NewFlexMessage("playlist msg", container)
+	msg := linebot.NewFlexMessage("playlist flex msg", container)
 
 	return msg, nil
 }

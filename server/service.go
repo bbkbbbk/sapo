@@ -192,7 +192,6 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*linebot.Fl
 	if err != nil {
 		return nil, errors.Wrapf(err, "[createPlaylistFlexMsg]: unable to create playlist flex msg")
 	}
-	logrus.Info(flex)
 
 	return flex, nil
 }

@@ -14,6 +14,7 @@ const (
 	defaultTimeout = 30
 
 	textEventEcho = "echo"
+	textEventCreatePlaylist = "create playlist"
 )
 
 type Service interface {
@@ -96,8 +97,17 @@ func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 func (s *service) textEventsHandler(uid, msg, token string) error {
 	switch msg {
 	case textEventEcho:
-		if err := s.lineService.EchoMsg(msg, token); err != nil {
-			return errors.Wrap(err, "[textEventsHandler]: unable to send echo message")
+		if err := s.lineService.SendMessage(msg, token); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
+		}
+	case textEventCreatePlaylist:
+		playlistUrl, err := s.CreateRecommendedPlaylistForUser(uid)
+		if err != nil {
+			return errors.Wrapf(err, "[textEventsHandler]: unable to create recommended playlist to user id %s", uid)
+		}
+
+		if err := s.lineService.SendMessage(playlistUrl, token); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
 	}
 
@@ -131,24 +141,24 @@ func (s *service) GetAccountByUID(uid string) (*Account, error) {
 	return acc, nil
 }
 
-func (s *service) CreateRecommendedPlaylistForUser(uid string) error {
+func (s *service) CreateRecommendedPlaylistForUser(uid string) (string, error) {
 	acc, err := s.GetAccountByUID(uid)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get user account token")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get user account token")
 	}
 	spotifyId := acc.SpotifyID
 	refreshToken := acc.RefreshToken
 
 	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
 
 	}
 
-	err = s.spotifyService.CreateRecommendedPlaylistForUser(accessToken, spotifyId)
+	playlistUrl, err := s.spotifyService.CreateRecommendedPlaylistForUser(accessToken, spotifyId)
 	if err != nil {
-		return errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
+		return "", errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
 	}
 
-	return nil
+	return playlistUrl, nil
 }

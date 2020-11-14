@@ -45,7 +45,7 @@ type Image struct {
 }
 
 type ExternalURLs struct {
-	Spotify string `json:"spotify"`
+	URL string `json:"spotify"`
 }
 
 type TrackPagingObject struct {
@@ -67,6 +67,14 @@ type SimplifiedObject struct {
 
 type SimplifiedTracks struct {
 	Tracks []SimplifiedObject `json:"tracks"`
+}
+
+type Playlist struct {
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 // PlayHistoryTrack represents items inside response from getting user currently played tracks

@@ -7,4 +7,6 @@ func RoutesRegister(e *echo.Echo, h Handler) {
 	e.POST("/line-callback", h.LINECallback)
 	e.GET("/signup", h.SignUp)
 	e.GET("/spotify-callback", h.SpotifyCallback)
+
+	e.GET("/test", h.Test)
 }

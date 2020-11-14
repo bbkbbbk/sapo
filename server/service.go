@@ -135,7 +135,7 @@ func (s *service) LINELinkUserToDefaultRichMenu(uid string) error {
 func (s *service) GetAccountByUID(uid string) (*Account, error) {
 	acc, err := s.repository.GetAccountByUID(uid)
 	if err != nil {
-		return nil, errors.Wrap(err, "[GetUserSpotifyToken]: unable to get user account token")
+		return nil, errors.Wrap(err, "[GetAccountByUID]: unable to get user account token")
 	}
 
 	return acc, nil
@@ -149,13 +149,7 @@ func (s *service) CreateRecommendedPlaylistForUser(uid string) (string, error) {
 	spotifyId := acc.SpotifyID
 	refreshToken := acc.RefreshToken
 
-	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
-	if err != nil {
-		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
-
-	}
-
-	playlistUrl, err := s.spotifyService.CreateRecommendedPlaylistForUser(accessToken, spotifyId)
+	playlistUrl, err := s.spotifyService.CreateRecommendedPlaylistForUser(refreshToken, spotifyId)
 	if err != nil {
 		return "", errors.Wrapf(err, "[CreateRecommendedPlaylistForUser]: unable to create recommended playlist for user id %s", uid)
 	}

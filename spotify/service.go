@@ -1,6 +1,7 @@
 package spotify
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -25,14 +26,12 @@ const (
 )
 
 var (
-	errorUnableToGetToken = errors.New("unable to get token from spotify")
-	errorInvalidSeed      = errors.New("invalid spotify seed")
+	errorInvalidSeed = errors.New("invalid spotify seed")
 )
 
 type Service interface {
 	GetAuthURL(state string) string
 	RequestToken(code string) (string, string, error)
-	RequestAccessTokenFromRefreshToken(token string) (string, error)
 	GetUserProfile(token string) (*User, error)
 	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 }
@@ -49,6 +48,11 @@ type responseTokenBody struct {
 	Scope          string `json:"scope"`
 	ExpirationTime int    `json:"expires_in"`
 	RefreshToken   string `json:"refresh_token"`
+}
+
+type requestCreatePlaylist struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 func NewSpotifyService(id, secret, url string) Service {
@@ -74,11 +78,6 @@ func (s *service) makeRequest(req *http.Request) ([]byte, error) {
 	}()
 	if err != nil {
 		return nil, errors.Wrap(err, "[makeRequest]: unable to get response from spotify")
-	}
-
-	if res.StatusCode != http.StatusOK {
-		logrus.Warn("[makeRequest]: unable to make a success response")
-		return nil, errorUnableToGetToken
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -244,13 +243,19 @@ func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) (
 
 func (s *service) CreatePlaylistForUser(token, uid string) (string, string, error) {
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists", uid)
-	name := fmt.Sprintf("Tracks for you %s", time.Now().Format("2000-05-19"))
+	now := time.Now()
+	name := fmt.Sprintf("Tracks for you %s", now.Format("2006-01-02"))
 
-	form := url.Values{}
-	form.Add("name", name)
-	form.Add("description", "Recommended tracks created by sapo")
+	reqCreate := requestCreatePlaylist{
+		Name:        name,
+		Description: "Recommended tracks created by sapo",
+	}
+	body, err := json.Marshal(&reqCreate)
+	if err != nil {
+		return "", "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to marshal request body")
+	}
 
-	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest("POST", spotifyURL, bytes.NewReader(body))
 	if err != nil {
 		return "", "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to create request")
 	}
@@ -259,13 +264,13 @@ func (s *service) CreatePlaylistForUser(token, uid string) (string, string, erro
 
 	res, err := s.makeRequest(req)
 	if err != nil {
-		return "",  "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to make request")
+		return "", "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to make request")
 	}
 
 	var playlist SimplifiedObject
 	err = json.Unmarshal(res, &playlist)
 	if err != nil {
-		return "",  "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to unmarshal response body")
+		return "", "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to unmarshal response body")
 	}
 
 	id := playlist.ID
@@ -309,12 +314,12 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
 	}
 
-	playlistId, playlistUrl, err := s.CreatePlaylistForUser(token, uid)
+	playlistId, playlistUrl, err := s.CreatePlaylistForUser(accessToken, uid)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
 	}
 
-	err = s.AddTracksToPlaylist(token, playlistId, uris)
+	err = s.AddTracksToPlaylist(accessToken, playlistId, uris)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
 	}

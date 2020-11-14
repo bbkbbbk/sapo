@@ -5,18 +5,19 @@ import (
 )
 
 type FlexTemplate struct {
-	Header string
-	Text string
+	Header      string
+	Text        string
 	ButtonLabel string
-	URLAction string
-	ImageURL string
-	Color string
+	URLAction   string
+	ImageURL    string
+	Color       string
 }
 
 func (f *FlexTemplate) ToJson() []byte {
 	template := fmt.Sprintf(
 		`{
 				  "type": "bubble",
+				  "size": "kilo",
 				  "body": {
 					"type": "box",
 					"layout": "vertical",
@@ -34,12 +35,6 @@ func (f *FlexTemplate) ToJson() []byte {
 						"layout": "vertical",
 						"contents": [],
 						"position": "absolute",
-						"background": {
-						  "type": "linearGradient",
-						  "angle": "0deg",
-						  "endColor": "#00000000",
-						  "startColor": "#00000099"
-						},
 						"width": "100%%",
 						"height": "40%%",
 						"offsetBottom": "0px",
@@ -103,14 +98,12 @@ func (f *FlexTemplate) ToJson() []byte {
 						"offsetStart": "0px",
 						"offsetEnd": "0px",
 						"paddingAll": "10px",
-						"backgroundColor": "%s"
+						"backgroundColor": "#%s"
 					  }
 					],
 					"paddingAll": "0px"
 				  }
 				}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
 
-	jsonTemplate := []byte(template)
-
-	return jsonTemplate
+	return []byte(template)
 }

@@ -14,7 +14,7 @@ import (
 
 const (
 	defaultTimeout = 30
-	defaultFlexColor = "#373C41CC"
+	defaultFlexColor = "373C41CC"
 
 	textEventEcho = "echo"
 	textEventCreatePlaylist = "create playlist"

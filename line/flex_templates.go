@@ -16,94 +16,71 @@ type FlexTemplate struct {
 func (f *FlexTemplate) ToJson() []byte {
 	template := fmt.Sprintf(
 		`{
-				  "type": "bubble",
-				  "size": "kilo",
-				  "body": {
+			  "type": "bubble",
+			  "size": "kilo",
+			  "body": {
+				"type": "box",
+				"layout": "vertical",
+				"contents": [
+				  {
+					"type": "image",
+					"url": "%s",
+					"size": "full",
+					"aspectMode": "cover",
+					"gravity": "center"
+				  },
+				  {
 					"type": "box",
 					"layout": "vertical",
 					"contents": [
 					  {
-						"type": "image",
-						"url": "%s",
-						"size": "full",
-						"aspectMode": "cover",
-						"aspectRatio": "3:4",
-						"gravity": "center"
+						"type": "box",
+						"layout": "vertical",
+						"contents": [
+						  {
+							"type": "text",
+							"text": "%s",
+							"color": "#ffffff",
+							"weight": "bold",
+							"size": "lg"
+						  }
+						]
 					  },
 					  {
 						"type": "box",
 						"layout": "vertical",
-						"contents": [],
-						"position": "absolute",
-						"width": "100%%",
-						"height": "40%%",
-						"offsetBottom": "0px",
-						"offsetStart": "0px",
-						"offsetEnd": "0px"
-					  },
-					  {
-						"type": "box",
-						"layout": "horizontal",
 						"contents": [
 						  {
-							"type": "box",
-							"layout": "vertical",
-							"contents": [
-							  {
-								"type": "box",
-								"layout": "horizontal",
-								"contents": [
-								  {
-									"type": "text",
-									"text": "%s",
-									"size": "lg",
-									"color": "#ffffff"
-								  }
-								]
-							  },
-							  {
-								"type": "box",
-								"layout": "baseline",
-								"contents": [
-								  {
-									"type": "text",
-									"text": "%s",
-									"color": "#a9a9a9",
-									"size": "xs"
-								  }
-								],
-								"spacing": "xs"
-							  },
-							  {
-								"type": "box",
-								"layout": "horizontal",
-								"contents": [
-								  {
-									"type": "button",
-									"action": {
-									  "type": "uri",
-									  "label": "%s",
-									  "uri": "%s"
-									},
-									"color": "#ffffff"
-								  }
-								]
-							  }
-							],
-							"spacing": "xs"
+							"type": "text",
+							"text": "%s",
+							"color": "#969696",
+							"size": "xs"
 						  }
-						],
-						"position": "absolute",
-						"offsetBottom": "0px",
-						"offsetStart": "0px",
-						"offsetEnd": "0px",
-						"paddingAll": "10px",
-						"backgroundColor": "#%s"
+						]
+					  },
+					  {
+						"type": "button",
+						"action": {
+						  "type": "uri",
+						  "label": "%s",
+						  "uri": "%s"
+						},
+						"color": "#ffffff",
+						"offsetBottom": "5px"
 					  }
 					],
-					"paddingAll": "0px"
+					"height": "100px",
+					"backgroundColor": "#%s",
+					"position": "absolute",
+					"offsetBottom": "0px",
+					"offsetStart": "0px",
+					"offsetEnd": "0px",
+					"paddingAll": "10px"
 				  }
-				}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
+				],
+				"paddingAll": "0px"
+			  }
+			}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
 
 	return []byte(template)
 }

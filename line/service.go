@@ -1,6 +1,8 @@
 package line
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,18 +22,23 @@ type Service interface {
 	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
-	CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error)
+	SendReplyFlexMsg(replyToken string, flex FlexTemplate) error
 }
 
 type service struct {
-	lineClient *linebot.Client
-	richMenu   RichMenuMetadata
-	token      string
+	lineClient   *linebot.Client
+	richMenu     RichMenuMetadata
+	channelToken string
 }
 
 type RichMenuMetadata struct {
 	Login   string
 	Default string
+}
+
+type replyMsgBody struct {
+	ReplyToken string `json:"replyToken"`
+	Messages []string `json:"messages"`
 }
 
 func NewLINEService(secret, token string, menu RichMenuMetadata) Service {
@@ -41,14 +48,14 @@ func NewLINEService(secret, token string, menu RichMenuMetadata) Service {
 	}
 
 	return &service{
-		lineClient: bot,
-		token:      token,
-		richMenu:   menu,
+		lineClient:   bot,
+		channelToken: token,
+		richMenu:     menu,
 	}
 }
 
 func (s *service) newAuthHeader() string {
-	return fmt.Sprintf("Bearer %s", s.token)
+	return fmt.Sprintf("Bearer %s", s.channelToken)
 }
 
 func (s *service) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
@@ -121,13 +128,49 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 	return nil
 }
 
-func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error){
-	container, err := linebot.UnmarshalFlexMessageJSON(template.ToJson())
+//func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error){
+//	container, err := linebot.UnmarshalFlexMessageJSON(template.ToJson())
+//	if err != nil {
+//		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
+//	}
+//
+//	msg := linebot.NewFlexMessage("playlist flex msg", container)
+//
+//	return msg, nil
+//}
+
+func (s *service) SendReplyFlexMsg(replyToken string, flex FlexTemplate) error {
+	lineURL := "https://api.line.me/v2/bot/message/reply"
+
+	body := replyMsgBody{
+		ReplyToken: replyToken,
+		Messages: []string{flex.ToString()},
+	}
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
+		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to marshal request body")
 	}
 
-	msg := linebot.NewFlexMessage("playlist flex msg", container)
+	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to create request")
+	}
+	req.Header.Add("Authorization", s.newAuthHeader())
+	req.Header.Add("Content-Type", "application/json")
 
-	return msg, nil
+	client := &http.Client{
+		Timeout: time.Second * defaultTimeout,
+	}
+	res, err := client.Do(req)
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			logrus.Warn("[SendReplyFlexMsg]: unable to close response body", err)
+		}
+	}()
+	if err != nil {
+		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to make a success request")
+	}
+
+	return nil
 }

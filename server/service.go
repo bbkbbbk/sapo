@@ -132,7 +132,7 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 			return errors.Wrapf(err, "[textEventsHandler]: unable to create flex message")
 		}
 
-		if err := s.lineService.SendFlexMessage(token, flex); err != nil {
+		if err := s.lineService.SendReplyFlexMsg(token, *flex); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
 	}
@@ -178,7 +178,7 @@ func (s *service) createRecommendedPlaylistForUser(uid string) (*spotify.Playlis
 	return playlist, nil
 }
 
-func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*linebot.FlexMessage, error) {
+func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*line.FlexTemplate, error) {
 	template := line.FlexTemplate{
 		Header: playlist.Name,
 		Text: playlist.Description,
@@ -188,10 +188,10 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*linebot.Fl
 		Color: defaultFlexColor,
 	}
 
-	flex, err := s.lineService.CreateFlexMsgFromTemplate(template)
-	if err != nil {
-		return nil, errors.Wrapf(err, "[createPlaylistFlexMsg]: unable to create playlist flex msg")
-	}
+	//flex, err := s.lineService.CreateFlexMsgFromTemplate(template)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "[createPlaylistFlexMsg]: unable to create playlist flex msg")
+	//}
 
-	return flex, nil
+	return &template, nil
 }

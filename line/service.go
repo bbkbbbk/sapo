@@ -1,7 +1,6 @@
 package line
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -127,12 +126,6 @@ func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.Fle
 	if err != nil {
 		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
 	}
-
-	var raw map[string]interface{}
-	if err := json.Unmarshal(template.ToJson(), &raw); err != nil {
-		return nil, err
-	}
-	logrus.Info(raw)
 
 	msg := linebot.NewFlexMessage("playlist flex msg", container)
 

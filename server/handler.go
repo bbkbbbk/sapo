@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -112,4 +113,11 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, "login successfully welcome to sapo :D")
+}
+
+func (h *Handler) Test(c echo.Context) error {
+	uid := "Ub62b8d059314f8cdc0c57a34b53634ff"
+	fmt.Println(uid)
+
+	return c.NoContent(http.StatusOK)
 }

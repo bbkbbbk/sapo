@@ -1,10 +1,7 @@
 package line
 
 import (
-	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 type FlexTemplate struct {
@@ -16,7 +13,7 @@ type FlexTemplate struct {
 	Color string
 }
 
-func (f *FlexTemplate) ToJson() ([]byte, error) {
+func (f *FlexTemplate) ToJson() []byte {
 	template := fmt.Sprintf(
 		`{
 				  "type": "bubble",
@@ -113,10 +110,7 @@ func (f *FlexTemplate) ToJson() ([]byte, error) {
 				  }
 				}`, f.ImageURL, f.Header, f.Text, f.ButtonLabel, f.URLAction, f.Color)
 
-	jsonTemplate, err := json.Marshal(template)
-	if err != nil {
-		return nil, errors.Wrap(err, "[ToFlexComponent]: unable to marshal template")
-	}
+	jsonTemplate := []byte(template)
 
-	return jsonTemplate, nil
+	return jsonTemplate
 }

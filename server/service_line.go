@@ -12,7 +12,7 @@ import (
 
 type LINEService interface {
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
-	EchoMsg(msg, token string) error
+	SendMessage(msg, token string) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
 }
@@ -49,7 +49,7 @@ func (l *lineService) ParseRequest(req *http.Request) ([]*linebot.Event, error) 
 	return l.lineClient.ParseRequest(req)
 }
 
-func (l *lineService) EchoMsg(msg, token string) error {
+func (l *lineService) SendMessage(msg, token string) error {
 	replyMsg := linebot.NewTextMessage(msg)
 	_, err := l.lineClient.ReplyMessage(token, replyMsg).Do()
 

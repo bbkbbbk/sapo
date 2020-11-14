@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/bbkbbbk/sapo/line"
 	pkgMongo "github.com/bbkbbbk/sapo/pkg/mongo"
 	"github.com/bbkbbbk/sapo/server"
 	"github.com/bbkbbbk/sapo/spotify"
@@ -17,8 +18,8 @@ import (
 var (
 	basedURL       string
 	db             *mongo.Database
-	line           server.LINEService
-	richMenu       server.LINERichMenuMetadata
+	lineService    line.Service
+	richMenu       line.RichMenuMetadata
 	spotifyService spotify.Service
 )
 
@@ -37,14 +38,14 @@ func init() {
 }
 
 func init() {
-	richMenu = server.LINERichMenuMetadata{
+	richMenu = line.RichMenuMetadata{
 		Login:   os.Getenv("RICH_MENU_LOGIN"),
 		Default: os.Getenv("RICH_MENU_DEFAULT"),
 	}
 }
 
 func init() {
-	line = server.NewLINEService(
+	lineService = line.NewLINEService(
 		os.Getenv("CHANNEL_SECRET"),
 		os.Getenv("CHANNEL_TOKEN"),
 		richMenu,
@@ -68,7 +69,7 @@ func main() {
 	}))
 
 	repository := server.NewRepository(db)
-	service := server.NewService(basedURL, line, spotifyService, repository)
+	service := server.NewService(basedURL, lineService, spotifyService, repository)
 	serverHandler := server.NewHandler(service)
 	server.RoutesRegister(e, serverHandler)
 

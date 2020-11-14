@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/bbkbbbk/sapo/line"
 	"net/http"
 	"time"
 
@@ -28,12 +29,12 @@ type Service interface {
 
 type service struct {
 	basedURL       string
-	lineService    LINEService
+	lineService    line.Service
 	spotifyService spotify.Service
 	repository     Repository
 }
 
-func NewService(url string, line LINEService, spotify spotify.Service, repo Repository) Service {
+func NewService(url string, line line.Service, spotify spotify.Service, repo Repository) Service {
 	return &service{
 		basedURL:       url,
 		lineService:    line,

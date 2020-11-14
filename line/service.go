@@ -1,4 +1,4 @@
-package server
+package line
 
 import (
 	"fmt"
@@ -10,48 +10,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type LINEService interface {
+const (
+	defaultTimeout = 30
+)
+
+type Service interface {
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
 	SendMessage(msg, token string) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
 }
 
-type lineService struct {
+type service struct {
 	lineClient *linebot.Client
-	richMenu   LINERichMenuMetadata
+	richMenu   RichMenuMetadata
 	token      string
 }
 
-type LINERichMenuMetadata struct {
+type RichMenuMetadata struct {
 	Login   string
 	Default string
 }
 
-func NewLINEService(secret, token string, menu LINERichMenuMetadata) LINEService {
+func NewLINEService(secret, token string, menu RichMenuMetadata) Service {
 	bot, err := linebot.New(secret, token)
 	if err != nil {
 		logrus.Warnf("[NewLINEService]: unable to initialize line line client %v", err)
 	}
 
-	return &lineService{
+	return &service{
 		lineClient: bot,
 		token:      token,
 		richMenu:   menu,
 	}
 }
 
-func (l *lineService) newAuthHeader() string {
-	return fmt.Sprintf("Bearer %s", l.token)
+func (s *service) newAuthHeader() string {
+	return fmt.Sprintf("Bearer %s", s.token)
 }
 
-func (l *lineService) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
-	return l.lineClient.ParseRequest(req)
+func (s *service) ParseRequest(req *http.Request) ([]*linebot.Event, error) {
+	return s.lineClient.ParseRequest(req)
 }
 
-func (l *lineService) SendMessage(msg, token string) error {
+func (s *service) SendMessage(msg, token string) error {
 	replyMsg := linebot.NewTextMessage(msg)
-	_, err := l.lineClient.ReplyMessage(token, replyMsg).Do()
+	_, err := s.lineClient.ReplyMessage(token, replyMsg).Do()
 
 	if err != nil {
 		return errors.Wrap(err, "[EchoMsg]: unable to send a reply text message")
@@ -60,9 +64,9 @@ func (l *lineService) SendMessage(msg, token string) error {
 	return nil
 }
 
-func (l *lineService) LinkUserToLoginRichMenu(uid string) error {
-	rid := l.richMenu.Login
-	err := l.linkUserToRichMenu(uid, rid)
+func (s *service) LinkUserToLoginRichMenu(uid string) error {
+	rid := s.richMenu.Login
+	err := s.linkUserToRichMenu(uid, rid)
 	if err != nil {
 		return err
 	}
@@ -70,9 +74,9 @@ func (l *lineService) LinkUserToLoginRichMenu(uid string) error {
 	return nil
 }
 
-func (l *lineService) LinkUserToDefaultRichMenu(uid string) error {
-	rid := l.richMenu.Default
-	err := l.linkUserToRichMenu(uid, rid)
+func (s *service) LinkUserToDefaultRichMenu(uid string) error {
+	rid := s.richMenu.Default
+	err := s.linkUserToRichMenu(uid, rid)
 	if err != nil {
 		return err
 	}
@@ -80,7 +84,7 @@ func (l *lineService) LinkUserToDefaultRichMenu(uid string) error {
 	return nil
 }
 
-func (l *lineService) linkUserToRichMenu(uid, rid string) error {
+func (s *service) linkUserToRichMenu(uid, rid string) error {
 	lineURL := fmt.Sprintf("https://api.line.me/v2/bot/user/%s/richmenu/%s", uid, rid)
 
 	req, err := http.NewRequest("POST", lineURL, nil)
@@ -88,7 +92,7 @@ func (l *lineService) linkUserToRichMenu(uid, rid string) error {
 		return errors.Wrap(err, "[linkUserToRichMenu]: unable to create request")
 	}
 
-	req.Header.Add("Authorization", l.newAuthHeader())
+	req.Header.Add("Authorization", s.newAuthHeader())
 
 	client := &http.Client{
 		Timeout: time.Second * defaultTimeout,

@@ -59,9 +59,10 @@ type TrackPagingObject struct {
 
 // SimplifiedObject represents simplified version of track, artist, album, and playlist
 type SimplifiedObject struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	URI  string `json:"uri"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	URI          string       `json:"uri"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type SimplifiedTracks struct {

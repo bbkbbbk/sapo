@@ -34,7 +34,7 @@ type Service interface {
 	RequestToken(code string) (string, string, error)
 	RequestAccessTokenFromRefreshToken(token string) (string, error)
 	GetUserProfile(token string) (*User, error)
-	CreateRecommendedPlaylistForUser(token, uid string) error
+	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 }
 
 type service struct {
@@ -242,7 +242,7 @@ func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) (
 	return uris, nil
 }
 
-func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
+func (s *service) CreatePlaylistForUser(token, uid string) (string, string, error) {
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists", uid)
 	name := fmt.Sprintf("Tracks for you %s", time.Now().Format("2000-05-19"))
 
@@ -252,25 +252,26 @@ func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
 
 	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to create request")
+		return "", "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to create request")
 	}
 	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := s.makeRequest(req)
 	if err != nil {
-		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to make request")
+		return "",  "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to make request")
 	}
 
 	var playlist SimplifiedObject
 	err = json.Unmarshal(res, &playlist)
 	if err != nil {
-		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to unmarshal response body")
+		return "",  "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to unmarshal response body")
 	}
 
 	id := playlist.ID
+	externalUrl := playlist.ExternalURLs.Spotify
 
-	return id, nil
+	return id, externalUrl, nil
 }
 
 func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
@@ -292,33 +293,33 @@ func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
 	return nil
 }
 
-func (s *service) CreateRecommendedPlaylistForUser(token, uid string) error {
+func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, error) {
 	accessToken, err := s.RequestAccessTokenFromRefreshToken(token)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to request access token")
 	}
 
 	seeds, err := s.GetSeeds(accessToken)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
 	}
 
 	uris, err := s.GetRecommendationsBasedOnSeeds(accessToken, seeds)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
 	}
 
-	playlistId, err := s.CreatePlaylistForUser(token, uid)
+	playlistId, playlistUrl, err := s.CreatePlaylistForUser(token, uid)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
 	}
 
 	err = s.AddTracksToPlaylist(token, playlistId, uris)
 	if err != nil {
-		return errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
 	}
 
-	return nil
+	return playlistUrl, nil
 }
 
 func (s *service) GetUserProfile(token string) (*User, error) {

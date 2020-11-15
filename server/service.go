@@ -26,7 +26,6 @@ type Service interface {
 	LINEEventsHandler(events []*linebot.Event) error
 	LINELinkUserToLoginRichMenu(uid string) error
 	LINELinkUserToDefaultRichMenu(uid string) error
-	TestFlex(uid string) error
 }
 
 type service struct {
@@ -190,22 +189,4 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*message.Fl
 	)
 
 	return &flex, nil
-}
-
-func (s *service) TestFlex(uid string) error {
-	flex := message.NewBubbleWithButton(
-		"test",
-		"https://mosaic.scdn.co/640/ab67616d0000b2730cdb4b03fd27a1301592a5e3ab67616d0000b2733ceefb49194de6fcd2ffe4c7ab67616d0000b27347669a9be7d201ea97bbd3eeab67616d0000b2736029febcb938b2b8cb279b47",
-		"track sth",
-		"tracks by sapo",
-		"go",
-		"https://open.spotify.com/playlist/0O68SXXRKfcHt5iJkWQ7xD",
-		defaultFlexColor,
-	)
-
-	if err := s.lineService.ReplyFlexMsg("8197f23b7e454f22a081d0b2b37415d4", flex); err != nil {
-		return err
-	}
-
-	return nil
 }

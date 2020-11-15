@@ -16,13 +16,13 @@ type BubbleWithButton struct {
 
 func NewBubbleWithButton(altText, imgUrl, header, text, buttonLabel, urlAction, color string) Flex {
 	return &BubbleWithButton{
-		AltText: altText,
-		ImageURL: imgUrl,
-		Header: header,
-		Text: text,
+		AltText:     altText,
+		ImageURL:    imgUrl,
+		Header:      header,
+		Text:        text,
 		ButtonLabel: buttonLabel,
-		URLAction: urlAction,
-		Color: color,
+		URLAction:   urlAction,
+		Color:       color,
 	}
 }
 
@@ -107,4 +107,8 @@ func (f *BubbleWithButton) ToComponent() string {
 				}`, f.AltText, bubble)
 
 	return flex
+}
+
+func (f *BubbleWithButton) ToJson() []byte {
+	return []byte(f.ToComponent())
 }

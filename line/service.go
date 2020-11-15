@@ -2,7 +2,9 @@ package line
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -23,7 +25,8 @@ type Service interface {
 	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
-	SendReplyFlexMsg(replyToken string, flex message.Flex) error
+	ReplyFlexMsg(replyToken string, flex message.Flex) error
+	PushFlexMsg(uid string, flex message.Flex) error
 }
 
 type service struct {
@@ -124,18 +127,60 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 	return nil
 }
 
-func (s *service) SendReplyFlexMsg(replyToken string, flex message.Flex) error {
+func (s *service) ReplyFlexMsg(replyToken string, flex message.Flex) error {
 	lineURL := "https://api.line.me/v2/bot/message/reply"
 
-	replyMsg := message.Reply{
+	msg := message.Reply{
 		ReplyToken: replyToken,
+		Message:    flex,
+	}
+
+	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(msg.ToJson()))
+	if err != nil {
+		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to create request")
+	}
+	req.Header.Add("Authorization", s.newAuthHeader())
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: time.Second * defaultTimeout,
+	}
+	res, err := client.Do(req)
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			logrus.Warn("[SendReplyFlexMsg]: unable to close response body", err)
+		}
+	}()
+	if err != nil {
+		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to make a success request")
+	}
+
+	logrus.Info(res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		logrus.Warn(err)
+	}
+
+	var b interface{}
+	err = json.Unmarshal(body, &b)
+	if err != nil {
+		logrus.Warn(err)
+	}
+
+	logrus.Info(b)
+	return nil
+}
+
+func (s *service) PushFlexMsg(uid string, flex message.Flex) error {
+	lineURL := "https://api.line.me/v2/bot/message/push"
+
+	msg := message.Push{
+		ToID:    uid,
 		Message: flex,
 	}
 
-	body := replyMsg.ToJson()
-	logrus.Info(string(body))
-
-	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(msg.ToJson()))
 	if err != nil {
 		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to create request")
 	}

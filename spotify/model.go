@@ -1,41 +1,46 @@
 package spotify
 
 type User struct {
-	ID     string       `json:"id"`
-	Name   string       `json:"display_name"`
-	Email  string       `json:"email"`
-	Images []Image      `json:"images"`
-	URL    ExternalURLs `json:"external_urls"`
+	ID           string       `json:"id"`
+	Name         string       `json:"display_name"`
+	Email        string       `json:"email"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type Track struct {
-	ID         string       `json:"id"`
-	Name       string       `json:"name"`
-	Artists    []Artist     `json:"artists"`
-	Album      Album        `json:"album"`
-	URL        ExternalURLs `json:"external_urls"`
-	SpotifyURI string       `json:"uri"`
+	ID           string             `json:"id"`
+	Name         string             `json:"display_name"`
+	Artists      []SimplifiedObject `json:"artists"`
+	Album        SimplifiedObject   `json:"album"`
+	Duration     int                `json:"duration_ms"`
+	PreviewURL   string             `json:"preview_url"`
+	ExternalURLs ExternalURLs       `json:"external_urls"`
 }
 
 type Artist struct {
-	ID         string       `json:"id"`
-	Name       string       `json:"name"`
-	Genres     []string     `json:"genres"`
-	Images     []Image      `json:"images"`
-	URL        ExternalURLs `json:"external_urls"`
-	SpotifyURI string       `json:"uri"`
+	ID           string       `json:"id"`
+	Name         string       `json:"display_name"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type Album struct {
-	ID         string            `json:"id"`
-	Name       string            `json:"name"`
-	Label      string            `json:"label"`
-	Artists    []Artist          `json:"artists"`
-	Genres     []string          `json:"genres"`
-	Images     []Image           `json:"images"`
-	Tracks     TrackPagingObject `json:"tracks"`
-	URL        ExternalURLs      `json:"external_urls"`
-	SpotifyURI string            `json:"uri"`
+	ID           string             `json:"id"`
+	Name         string             `json:"display_name"`
+	Label        string             `json:"label"`
+	Artists      []SimplifiedObject `json:"artists"`
+	Tracks       []SimplifiedObject `json:"tracks"`
+	Images       []Image            `json:"images"`
+	ExternalURLs ExternalURLs       `json:"external_urls"`
+}
+
+type Playlist struct {
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type Image struct {
@@ -48,15 +53,6 @@ type ExternalURLs struct {
 	URL string `json:"spotify"`
 }
 
-type TrackPagingObject struct {
-	Items    []Track `json:"items"`
-	Limit    int     `json:"limit"`
-	Offset   int     `json:"offset"`
-	Next     string  `json:"next"`
-	Previous string  `json:"previous"`
-	Total    int     `json:"total"`
-}
-
 // SimplifiedObject represents simplified version of track, artist, album, and playlist
 type SimplifiedObject struct {
 	ID           string       `json:"id"`
@@ -65,25 +61,15 @@ type SimplifiedObject struct {
 	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
-type SimplifiedTracks struct {
-	Tracks []SimplifiedObject `json:"tracks"`
+type Tracks struct {
+	Items []SimplifiedObject `json:"tracks"`
 }
 
-type Playlist struct {
-	ID           string       `json:"id"`
-	Name         string       `json:"name"`
-	Description  string       `json:"description"`
-	Images       []Image      `json:"images"`
-	ExternalURLs ExternalURLs `json:"external_urls"`
-}
-
-// PlayHistoryTrack represents items inside response from getting user currently played tracks
-type PlayHistoryTrack struct {
+type PlayingHistory struct {
 	Track    SimplifiedObject `json:"track"`
 	PlayedAt string           `json:"played_at"`
 }
 
-// PlayHistoryObject represent object response from getting user currently played tracks
-type PlayHistoryObject struct {
-	Items []PlayHistoryTrack `json:"items"`
+type Paging struct {
+	Items []interface{} `json:"items"`
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -66,7 +67,52 @@ func NewSpotifyService(id, secret, url string) Service {
 	}
 }
 
-func (s *service) makeRequest(req *http.Request) ([]byte, error) {
+func (s *service) makeAuthRequest(form url.Values) ([]byte, error) {
+	spotifyURL := "https://accounts.spotify.com/api/token"
+
+	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to create request")
+	}
+	req.Header.Add("Authorization", s.newAuthHeader())
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
+
+	client := &http.Client{
+		Timeout: time.Second * defaultTimeout,
+	}
+
+	res, err := client.Do(req)
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			logrus.Warn("[makeAuthRequest]: unable to close response body", err)
+		}
+	}()
+	if err != nil {
+		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to get response from spotify")
+	}
+
+	if !(res.StatusCode >= 200 && res.StatusCode <= 299) {
+		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to make a success request")
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to read response body")
+	}
+
+	return body, nil
+}
+
+func (s *service) makeRequest(token, method, url string, reqBody io.Reader) ([]byte, error) {
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, errors.Wrap(err, "[makeRequest]: unable to create request")
+	}
+	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
+	req.Header.Add("Content-Type", "application/json")
+
 	client := &http.Client{
 		Timeout: time.Second * defaultTimeout,
 	}
@@ -80,6 +126,10 @@ func (s *service) makeRequest(req *http.Request) ([]byte, error) {
 	}()
 	if err != nil {
 		return nil, errors.Wrap(err, "[makeRequest]: unable to get response from spotify")
+	}
+
+	if !(res.StatusCode >= 200 && res.StatusCode <= 299) {
+		return nil, errors.Wrap(err, "[makeRequest]: unable to make a success request")
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -112,22 +162,12 @@ func (s *service) GetAuthURL(state string) string {
 }
 
 func (s *service) RequestToken(code string) (string, string, error) {
-	spotifyURL := "https://accounts.spotify.com/api/token"
-
 	form := url.Values{}
 	form.Add("grant_type", "authorization_code")
 	form.Add("code", code)
 	form.Add("redirect_uri", s.CallbackURL)
 
-	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return "", "", errors.Wrap(err, "[RequestToken]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthHeader())
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeAuthRequest(form)
 	if err != nil {
 		return "", "", errors.Wrap(err, "[RequestToken]: unable to make request")
 	}
@@ -145,21 +185,11 @@ func (s *service) RequestToken(code string) (string, string, error) {
 }
 
 func (s *service) RequestAccessTokenFromRefreshToken(token string) (string, error) {
-	spotifyURL := "https://accounts.spotify.com/api/token"
-
 	form := url.Values{}
 	form.Add("grant_type", "refresh_token")
 	form.Add("refresh_token", token)
 
-	req, err := http.NewRequest("POST", spotifyURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return "", errors.Wrap(err, "[RequestAccessTokenFromRefreshToken]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthHeader())
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeAuthRequest(form)
 	if err != nil {
 		return "", errors.Wrap(err, "[RequestAccessTokenFromRefreshToken]: unable to make request")
 	}
@@ -178,27 +208,22 @@ func (s *service) RequestAccessTokenFromRefreshToken(token string) (string, erro
 func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
 	spotifyURL := "https://api.spotify.com/v1/me/player/recently-played?limit=50"
 
-	req, err := http.NewRequest("GET", spotifyURL, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "[GetSeeds]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetSeeds]: unable to make request")
 	}
 
-	var playingHistory PlayHistoryObject
-	err = json.Unmarshal(res, &playingHistory)
+	var obj Paging
+	err = json.Unmarshal(res, &obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetSeeds]: unable to unmarshal response body")
 	}
 
 	seedTracks := []string{}
-	for i, item := range playingHistory.Items {
+	for i, item := range obj.Items {
+		history := item.(PlayingHistory)
 		if i%10 == 0 {
-			seedTrack := item.Track.ID
+			seedTrack := history.Track.ID
 			seedTracks = append(seedTracks, seedTrack)
 		}
 	}
@@ -217,25 +242,19 @@ func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) (
 
 	path := fmt.Sprintf("%s?limit=%d&seed_tracks=%s", spotifyURL, limit, seedTracks)
 
-	req, err := http.NewRequest("GET", path, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "[GetRecommendationsBasedOnSeeds]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeRequest(token, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetRecommendationsBasedOnSeeds]: unable to make request")
 	}
 
-	var tracks SimplifiedTracks
+	var tracks Tracks
 	err = json.Unmarshal(res, &tracks)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetRecommendationsBasedOnSeeds]: unable to unmarshal response body")
 	}
 
 	uris := []string{}
-	for _, track := range tracks.Tracks {
+	for _, track := range tracks.Items {
 		uri := track.URI
 		uris = append(uris, uri)
 	}
@@ -257,19 +276,12 @@ func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
 		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to marshal request body")
 	}
 
-	req, err := http.NewRequest("POST", spotifyURL, bytes.NewReader(body))
-	if err != nil {
-		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-	req.Header.Add("Content-Type", "application/json")
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeRequest(token, http.MethodPost, spotifyURL, bytes.NewReader(body))
 	if err != nil {
 		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to make request")
 	}
 
-	var playlist SimplifiedObject
+	var playlist Playlist
 	err = json.Unmarshal(res, &playlist)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreatePlaylistForUser]: unable to unmarshal response body")
@@ -284,14 +296,7 @@ func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
 	urisParam := strings.Join(uris, ",")
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks?uris=%s", id, urisParam)
 
-	req, err := http.NewRequest("POST", spotifyURL, nil)
-	if err != nil {
-		return errors.Wrap(err, "[AddTracksToPlaylist]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-	req.Header.Add("Content-Type", "application/json")
-
-	_, err = s.makeRequest(req)
+	_, err := s.makeRequest(token, http.MethodPost, spotifyURL, nil)
 	if err != nil {
 		return errors.Wrap(err, "[AddTracksToPlaylist]: unable to make request")
 	}
@@ -326,13 +331,7 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 func (s *service) GetUserProfile(token string) (*User, error) {
 	spotifyURL := "https://api.spotify.com/v1/me"
 
-	req, err := http.NewRequest("GET", spotifyURL, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "[GetUserProfile]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetUserProfile]: unable to make request")
 	}
@@ -349,13 +348,7 @@ func (s *service) GetUserProfile(token string) (*User, error) {
 func (s *service) GetPlaylistByID(token, id string) (*Playlist, error) {
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s", id)
 
-	req, err := http.NewRequest("GET", spotifyURL, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "[GetPlaylistByID]: unable to create request")
-	}
-	req.Header.Add("Authorization", s.newAuthAccessHeader(token))
-
-	res, err := s.makeRequest(req)
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetPlaylistByID]: unable to make request")
 	}

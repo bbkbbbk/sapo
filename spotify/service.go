@@ -361,3 +361,49 @@ func (s *service) GetPlaylistByID(token, id string) (*Playlist, error) {
 
 	return &playlist, nil
 }
+
+func (s *service) GetUserTopArtists(token string) ([]*Artist, error) {
+	spotifyURL := "https://api.spotify.com/v1/me/top/artists?limit=5&time_range=medium_term"
+
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetUserTopArtists]: unable to make request")
+	}
+
+	var obj Paging
+	err = json.Unmarshal(res, &obj)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetUserTopArtists]: unable to unmarshal response body")
+	}
+
+	artists := []*Artist{}
+	for _, item := range obj.Items {
+		artist := item.(Artist)
+		artists = append(artists, &artist)
+	}
+
+	return artists, nil
+}
+
+func (s *service) GetUserTopTracks(token string) ([]*Track, error) {
+	spotifyURL := "https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=medium_term"
+
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetUserTopTracks]: unable to make request")
+	}
+
+	var obj Paging
+	err = json.Unmarshal(res, &obj)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetUserTopTracks]: unable to unmarshal response body")
+	}
+
+	tracks := []*Track{}
+	for _, item := range obj.Items {
+		track := item.(Track)
+		tracks = append(tracks, &track)
+	}
+
+	return tracks, nil
+}

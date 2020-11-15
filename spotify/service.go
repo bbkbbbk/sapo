@@ -246,11 +246,11 @@ func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) (
 func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists", uid)
 	now := time.Now()
-	name := fmt.Sprintf("Tracks for you %s", now.Format("2006-01-02"))
+	name := fmt.Sprintf("%s Tracks for you", now.Format("2006-01-02"))
 
 	reqCreate := requestCreatePlaylist{
 		Name:        name,
-		Description: "Recommended tracks created by sapo",
+		Description: "Playlist created by sapo",
 	}
 	body, err := json.Marshal(&reqCreate)
 	if err != nil {

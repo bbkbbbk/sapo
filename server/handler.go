@@ -118,10 +118,6 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 func (h *Handler) Test(c echo.Context) error {
 	uid := "Ub62b8d059314f8cdc0c57a34b53634ff"
 	fmt.Println(uid)
-	err := h.service.TestFlex(uid)
-	if err != nil {
-		return h.returnError(err)
-	}
 
 	return c.NoContent(http.StatusOK)
 }

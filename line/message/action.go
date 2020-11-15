@@ -2,8 +2,6 @@ package message
 
 import (
 	"fmt"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Flex interface {
@@ -22,8 +20,6 @@ func (r *Reply) ToJson() []byte {
 		"messages":[%s]
 	}`, r.ReplyToken, r.Message.ToComponent())
 
-	logrus.Info(msg)
-
 	return []byte(msg)
 }
 
@@ -37,8 +33,6 @@ func (r *Push) ToJson() []byte {
 		"to":"%s",
 		"messages":[%s]
 	}`, r.ToID, r.Message.ToComponent())
-
-	logrus.Info(msg)
 
 	return []byte(msg)
 }

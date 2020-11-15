@@ -44,7 +44,7 @@ func (f *BubbleWithButton) ToComponent() string {
 							"text": "%s",
 							"color": "#ffffff",
 							"weight": "bold",
-							"size": "lg"
+							"size": "sm"
 						  }
 						]
 					  }`, f.Header)
@@ -57,7 +57,7 @@ func (f *BubbleWithButton) ToComponent() string {
 							"type": "text",
 							"text": "%s",
 							"color": "#969696",
-							"size": "xs"
+							"size": "xxs"
 						  }
 						]
 					  }`, f.Text)

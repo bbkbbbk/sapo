@@ -175,7 +175,7 @@ func (s *service) RequestAccessTokenFromRefreshToken(token string) (string, erro
 	return accessToken, nil
 }
 
-func (s *service) GetSeeds(token string) ([]string, error) {
+func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
 	spotifyURL := "https://api.spotify.com/v1/me/player/recently-played?limit=50"
 
 	req, err := http.NewRequest("GET", spotifyURL, nil)
@@ -300,7 +300,7 @@ func (s *service) AddTracksToPlaylist(token, id string, uris []string) error {
 }
 
 func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, error) {
-	seeds, err := s.GetSeeds(token)
+	seeds, err := s.GetCurrentTrackSeeds(token)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
 	}

@@ -2,7 +2,6 @@ package line
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,6 +9,8 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bbkbbbk/sapo/line/message"
 )
 
 const (
@@ -22,7 +23,7 @@ type Service interface {
 	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
-	SendReplyFlexMsg(replyToken string, flex FlexTemplate) error
+	SendReplyFlexMsg(replyToken string, flex message.Flex) error
 }
 
 type service struct {
@@ -34,11 +35,6 @@ type service struct {
 type RichMenuMetadata struct {
 	Login   string
 	Default string
-}
-
-type replyMsgBody struct {
-	ReplyToken string `json:"replyToken"`
-	Messages []string `json:"messages"`
 }
 
 func NewLINEService(secret, token string, menu RichMenuMetadata) Service {
@@ -128,30 +124,18 @@ func (s *service) linkUserToRichMenu(uid, rid string) error {
 	return nil
 }
 
-//func (s *service) CreateFlexMsgFromTemplate(template FlexTemplate) (*linebot.FlexMessage, error){
-//	container, err := linebot.UnmarshalFlexMessageJSON(template.ToJson())
-//	if err != nil {
-//		return nil, errors.Wrap(err, "[CreateFlexMsgFromTemplate]: unable to create flex container")
-//	}
-//
-//	msg := linebot.NewFlexMessage("playlist flex msg", container)
-//
-//	return msg, nil
-//}
-
-func (s *service) SendReplyFlexMsg(replyToken string, flex FlexTemplate) error {
+func (s *service) SendReplyFlexMsg(replyToken string, flex message.Flex) error {
 	lineURL := "https://api.line.me/v2/bot/message/reply"
 
-	body := replyMsgBody{
+	replyMsg := message.Reply{
 		ReplyToken: replyToken,
-		Messages: []string{flex.ToString()},
-	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to marshal request body")
+		Message: flex,
 	}
 
-	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(jsonBody))
+	body := replyMsg.ToJson()
+	logrus.Info(string(body))
+
+	req, err := http.NewRequest("POST", lineURL, bytes.NewBuffer(body))
 	if err != nil {
 		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to create request")
 	}

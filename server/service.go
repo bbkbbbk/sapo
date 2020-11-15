@@ -181,11 +181,11 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*message.Fl
 
 	flex := message.NewBubbleWithButton(
 		altText,
+		playlist.Images[0].URL,
 		playlist.Name,
 		playlist.Description,
 		buttonLabel,
 		playlist.ExternalURLs.URL,
-		playlist.Images[0].URL,
 		defaultFlexColor,
 	)
 

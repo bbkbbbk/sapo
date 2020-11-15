@@ -4,19 +4,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bbkbbbk/sapo/line"
+	"github.com/bbkbbbk/sapo/line/message"
+	"github.com/bbkbbbk/sapo/spotify"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"github.com/bbkbbbk/sapo/line"
-	"github.com/bbkbbbk/sapo/spotify"
 )
 
 const (
-	defaultTimeout = 30
+	defaultTimeout   = 30
 	defaultFlexColor = "373C41CC"
 
-	textEventEcho = "echo"
+	textEventEcho           = "echo"
 	textEventCreatePlaylist = "create playlist"
 )
 
@@ -129,7 +128,7 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 
 		flex, err := s.createPlaylistFlexMsg(playlist)
 		if err != nil {
-			return errors.Wrapf(err, "[textEventsHandler]: unable to create flex message")
+			return errors.Wrapf(err, "[textEventsHandler]: unable to create playlist flex message")
 		}
 
 		if err := s.lineService.SendReplyFlexMsg(token, *flex); err != nil {
@@ -172,26 +171,22 @@ func (s *service) createRecommendedPlaylistForUser(uid string) (*spotify.Playlis
 		return nil, errors.Wrap(err, "[createRecommendedPlaylistForUser]: unable to playlist detail")
 	}
 
-	logrus.Info(playlist.Images[0].URL)
-	logrus.Info(playlist.ExternalURLs.URL)
-
 	return playlist, nil
 }
 
-func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*line.FlexTemplate, error) {
-	template := line.FlexTemplate{
-		Header: playlist.Name,
-		Text: playlist.Description,
-		ButtonLabel: "go to playlist",
-		URLAction: playlist.ExternalURLs.URL,
-		ImageURL: playlist.Images[0].URL,
-		Color: defaultFlexColor,
-	}
+func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) (*message.Flex, error) {
+	altText := "Playlist for you"
+	buttonLabel := "go to playlist"
 
-	//flex, err := s.lineService.CreateFlexMsgFromTemplate(template)
-	//if err != nil {
-	//	return nil, errors.Wrapf(err, "[createPlaylistFlexMsg]: unable to create playlist flex msg")
-	//}
+	flex := message.NewBubbleWithButton(
+		altText,
+		playlist.Name,
+		playlist.Description,
+		buttonLabel,
+		playlist.ExternalURLs.URL,
+		playlist.Images[0].URL,
+		defaultFlexColor,
+	)
 
-	return &template, nil
+	return &flex, nil
 }

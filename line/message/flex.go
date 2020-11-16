@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -56,7 +57,8 @@ func (b *BubbleWithButton) ToComponent() string {
 							"type": "text",
 							"text": "%s",
 							"color": "#969696",
-							"size": "xxs"
+							"size": "xxs",
+ 							"offsetTop": "5px"
 						  }
 						]
 					  }`, b.Text)
@@ -94,18 +96,23 @@ func (b *BubbleWithButton) ToComponent() string {
 				"paddingAll": "0px"
 			  }
 			}`, cover, footer)
+
+	return bubble
+}
+
+func (b *BubbleWithButton) ToFlex() string {
 	flex := fmt.Sprintf(
 		`{
 				  "type": "flex",
 				  "altText": "%s",
 				  "contents": %s
-				}`, b.AltText, bubble)
+				}`, b.AltText, b.ToComponent())
 
 	return flex
 }
 
 func (b *BubbleWithButton) ToJson() []byte {
-	return []byte(b.ToComponent())
+	return []byte(b.ToFlex())
 }
 
 type BubbleReceipt struct {
@@ -113,10 +120,10 @@ type BubbleReceipt struct {
 	TopText string
 	Header  string
 	Text    string
-	Items   []BoxWithImage
+	Items   []BubbleReceiptBox
 }
 
-type BoxWithImage struct {
+type BubbleReceiptBox struct {
 	Header   string
 	Text     string
 	LeftText string
@@ -124,7 +131,7 @@ type BoxWithImage struct {
 	URL      string
 }
 
-func NewBubbleReceipt(altText, topText, header, text string, items []BoxWithImage) Flex {
+func NewBubbleReceipt(altText, topText, header, text string, items []BubbleReceiptBox) Flex {
 	return &BubbleReceipt{
 		AltText: altText,
 		TopText: topText,
@@ -134,66 +141,7 @@ func NewBubbleReceipt(altText, topText, header, text string, items []BoxWithImag
 	}
 }
 
-func (b *BubbleReceipt) ToComponent() string {
-	boxes := []string{}
-	for _, item := range b.Items {
-		boxes = append(boxes, item.ToComponent())
-	}
-
-	topText := fmt.Sprintf(`{
-				  "type": "text",
-				  "text": "%s",
-				  "weight": "bold",
-				  "color": "#2FA6E9",
-				  "size": "sm"
-				}`, b.TopText)
-	header := fmt.Sprintf(`{
-				  "type": "text",
-				  "text": "%s",
-				  "weight": "bold",
-				  "size": "xxl",
-				  "margin": "md",
-				  "color": "#373C41"
-				}`, b.Header)
-	text := fmt.Sprintf(`{
-				  "type": "text",
-				  "text": "%s",
-				  "size": "xs",
-				  "color": "#969696",
-				  "wrap": true,
-  				  "offsetTop": "5px"
-				}`, b.Text)
-	bubble := fmt.Sprintf(`{
-				"type": "bubble",
-				"body": {
-				  "type": "box",
-				  "layout": "vertical",
-				  "contents": [%s,%s,%s,
-					{
-					  "type": "separator",
-					  "margin": "xxl"
-					},
-					{
-					  "type": "box",
-					  "layout": "vertical",
-					  "margin": "xxl",
-					  "spacing": "sm",
-					  "contents": [%s]
-					}
-				  ]
-				}
-			  }`, topText, header, text, strings.Join(boxes, ","))
-	flex := fmt.Sprintf(
-		`{
-				  "type": "flex",
-				  "altText": "%s",
-				  "contents": %s
-				}`, b.AltText, bubble)
-
-	return flex
-}
-
-func (b *BoxWithImage) ToComponent() string {
+func (b *BubbleReceiptBox) ToComponent() string {
 	image := fmt.Sprintf(`{
 				  "type": "image",
 				  "url": "%s",
@@ -256,6 +204,194 @@ func (b *BoxWithImage) ToComponent() string {
 	return box
 }
 
+func (b *BubbleReceipt) ToComponent() string {
+	boxes := []string{}
+	for _, item := range b.Items {
+		boxes = append(boxes, item.ToComponent())
+	}
+
+	topText := fmt.Sprintf(`{
+				  "type": "text",
+				  "text": "%s",
+				  "weight": "bold",
+				  "color": "#2FA6E9",
+				  "size": "sm"
+				}`, b.TopText)
+	header := fmt.Sprintf(`{
+				  "type": "text",
+				  "text": "%s",
+				  "weight": "bold",
+				  "size": "xxl",
+				  "margin": "md",
+				  "color": "#373C41"
+				}`, b.Header)
+	text := fmt.Sprintf(`{
+				  "type": "text",
+				  "text": "%s",
+				  "size": "xs",
+				  "color": "#969696",
+				  "wrap": true,
+  				  "offsetTop": "5px"
+				}`, b.Text)
+	bubble := fmt.Sprintf(`{
+				"type": "bubble",
+				"body": {
+				  "type": "box",
+				  "layout": "vertical",
+				  "contents": [%s,%s,%s,
+					{
+					  "type": "separator",
+					  "margin": "xxl"
+					},
+					{
+					  "type": "box",
+					  "layout": "vertical",
+					  "margin": "xxl",
+					  "spacing": "sm",
+					  "contents": [%s]
+					}
+				  ]
+				}
+			  }`, topText, header, text, strings.Join(boxes, ","))
+
+	return bubble
+}
+
+func (b *BubbleReceipt) ToFlex() string {
+	flex := fmt.Sprintf(
+		`{
+				  "type": "flex",
+				  "altText": "%s",
+				  "contents": %s
+				}`, b.AltText, b.ToComponent())
+
+	return flex
+}
+
 func (b *BubbleReceipt) ToJson() []byte {
-	return []byte(b.ToComponent())
+	return []byte(b.ToFlex())
+}
+
+type BubblePlain struct {
+	AltText  string
+	Text     string
+	ImageURL string
+	URL      string
+	Color    string
+}
+
+func NewBubblePlain(text, img, url, color string) Flex {
+	return &BubblePlain{
+		Text:     text,
+		ImageURL: img,
+		URL:      url,
+		Color:    color,
+	}
+}
+
+func (b *BubblePlain) ToComponent() string {
+	cover := fmt.Sprintf(`{
+            "type": "image",
+            "url": "%s",
+            "aspectMode": "cover",
+            "size": "full"
+          }`, b.ImageURL)
+	text := fmt.Sprintf(`{
+                "type": "text",
+                "text": "%s",
+                "color": "#ffffff",
+                "size": "xxs"
+              }`, b.Text)
+	action := fmt.Sprintf(`{
+          "type": "uri",
+          "label": "action",
+          "uri": "%s"
+        }`, b.URL)
+	bubble := fmt.Sprintf(`{
+      "type": "bubble",
+      "size": "nano",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          %s,
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              %s
+            ],
+            "height": "30px",
+            "position": "absolute",
+            "offsetBottom": "0px",
+            "offsetStart": "0px",
+            "offsetEnd": "0px",
+            "backgroundColor": "#%s",
+            "alignItems": "center",
+            "justifyContent": "center"
+          }
+        ],
+        "paddingAll": "0px",
+        "action": %s
+      }
+    }`, cover, text, b.Color, action)
+
+	return bubble
+}
+
+func (b *BubblePlain) ToFlex() string {
+	flex := fmt.Sprintf(
+		`{
+				  "type": "flex",
+				  "altText": "%s",
+				  "contents": %s
+				}`, b.AltText, b.ToComponent())
+
+	return flex
+}
+
+func (b *BubblePlain) ToJson() []byte {
+	return []byte(b.ToFlex())
+}
+
+type Carousel struct {
+	AltText string
+	Flex    []Flex
+}
+
+func NewCarousel(altText string, flex []Flex) Flex {
+	return &Carousel{
+		AltText: altText,
+		Flex:    flex,
+	}
+}
+
+func (c *Carousel) ToComponent() string {
+	flex := []string{}
+	for _, f := range c.Flex {
+		flex = append(flex, f.ToComponent())
+	}
+	carousel := fmt.Sprintf(`{
+			  "type": "carousel",
+			  "contents": [%s]
+			}`, strings.Join(flex, ","))
+
+	return carousel
+}
+
+func (c *Carousel) ToFlex() string {
+	flex := fmt.Sprintf(
+		`{
+				  "type": "flex",
+				  "altText": "%s",
+				  "contents": %s
+				}`, c.AltText, c.ToComponent())
+
+	logrus.Info(flex)
+
+	return flex
+}
+
+func (c *Carousel) ToJson() []byte {
+	return []byte(c.ToFlex())
 }

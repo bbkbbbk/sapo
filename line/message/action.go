@@ -6,6 +6,7 @@ import (
 
 type Flex interface {
 	ToComponent() string
+	ToFlex() string
 	ToJson() []byte
 }
 
@@ -18,7 +19,7 @@ func (r *Reply) ToJson() []byte {
 	msg := fmt.Sprintf(`{
 		"replyToken":"%s",
 		"messages":[%s]
-	}`, r.ReplyToken, r.Message.ToComponent())
+	}`, r.ReplyToken, r.Message.ToFlex())
 
 	return []byte(msg)
 }
@@ -32,7 +33,7 @@ func (r *Push) ToJson() []byte {
 	msg := fmt.Sprintf(`{
 		"to":"%s",
 		"messages":[%s]
-	}`, r.ToID, r.Message.ToComponent())
+	}`, r.ToID, r.Message.ToFlex())
 
 	return []byte(msg)
 }

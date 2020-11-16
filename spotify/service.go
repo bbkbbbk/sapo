@@ -37,8 +37,8 @@ type Service interface {
 	GetUserProfile(token string) (*User, error)
 	GetPlaylist(token, id string) (*Playlist, error)
 	GetAlbums(token string, ids []string) ([]Album, error)
-	GetTopArtists(token string) ([]Artist, error)
-	GetTopTracks(token string) ([]Track, error)
+	GetTopArtists(token string, limit int) ([]Artist, error)
+	GetTopTracks(token string, limit int) ([]Track, error)
 	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 }
 
@@ -364,8 +364,8 @@ func (s *service) GetPlaylist(token, id string) (*Playlist, error) {
 	return &playlist, nil
 }
 
-func (s *service) GetTopArtists(token string) ([]Artist, error) {
-	spotifyURL := "https://api.spotify.com/v1/me/top/artists?limit=5&time_range=short_term"
+func (s *service) GetTopArtists(token string, limit int) ([]Artist, error) {
+	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/me/top/artists?limit=%v&time_range=medium_term", limit)
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {
@@ -384,8 +384,8 @@ func (s *service) GetTopArtists(token string) ([]Artist, error) {
 	return artists, nil
 }
 
-func (s *service) GetTopTracks(token string) ([]Track, error) {
-	spotifyURL := "https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=short_term"
+func (s *service) GetTopTracks(token string, limit int) ([]Track, error) {
+	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%v&time_range=medium_term", limit)
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {

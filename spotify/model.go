@@ -21,7 +21,7 @@ type Track struct {
 
 type Artist struct {
 	ID           string       `json:"id"`
-	Name         string       `json:"display_name"`
+	Name         string       `json:"name"`
 	Images       []Image      `json:"images"`
 	ExternalURLs ExternalURLs `json:"external_urls"`
 	URI          string       `json:"uri"`

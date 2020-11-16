@@ -273,19 +273,19 @@ func (b *BubbleReceipt) ToJson() []byte {
 }
 
 type BubblePlain struct {
-	AltText string
-	Text string
+	AltText  string
+	Text     string
 	ImageURL string
-	URL string
-	Color string
+	URL      string
+	Color    string
 }
 
 func NewBubblePlain(text, img, url, color string) Flex {
 	return &BubblePlain{
-		Text: text,
+		Text:     text,
 		ImageURL: img,
-		URL: url,
-		Color: color,
+		URL:      url,
+		Color:    color,
 	}
 }
 
@@ -356,13 +356,13 @@ func (b *BubblePlain) ToJson() []byte {
 
 type Carousel struct {
 	AltText string
-	Flex []Flex
+	Flex    []Flex
 }
 
 func NewCarousel(altText string, flex []Flex) Flex {
 	return &Carousel{
 		AltText: altText,
-		Flex: flex,
+		Flex:    flex,
 	}
 }
 
@@ -395,4 +395,3 @@ func (c *Carousel) ToFlex() string {
 func (c *Carousel) ToJson() []byte {
 	return []byte(c.ToFlex())
 }
-

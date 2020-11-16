@@ -2,7 +2,6 @@ package message
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -58,7 +57,6 @@ func (b *BubbleWithButton) ToComponent() string {
 							"text": "%s",
 							"color": "#969696",
 							"size": "xxs",
- 							"offsetTop": "5px"
 						  }
 						]
 					  }`, b.Text)
@@ -386,8 +384,6 @@ func (c *Carousel) ToFlex() string {
 				  "altText": "%s",
 				  "contents": %s
 				}`, c.AltText, c.ToComponent())
-
-	logrus.Info(flex)
 
 	return flex
 }

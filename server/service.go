@@ -1,8 +1,8 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +19,7 @@ const (
 
 	textEventEcho           = "echo"
 	textEventCreatePlaylist = "create playlist"
-	textEventMyTopTracks = "my top tracks"
+	textEventMyTopTracks    = "my top tracks"
 )
 
 type Service interface {
@@ -135,12 +135,12 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
 		}
 	case textEventMyTopTracks:
-		tracks, albums, err := s.GetTopTracksWithAlbums(uid)
+		tracks, albums, err := s.getTopTracksWithAlbums(uid)
 		if err != nil {
 			return errors.Wrapf(err, "[textEventsHandler]: unable to get top tracks for user id %s", uid)
 		}
 
-		flex := s.CreateTopTracksFlexMsg(tracks, albums)
+		flex := s.createTopTracksFlexMsg(tracks, albums)
 
 		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
@@ -202,7 +202,7 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) *message.Fle
 	return &flex
 }
 
-func (s *service) GetTopTracksWithAlbums(uid string) ([]*spotify.Track, []*spotify.Album, error) {
+func (s *service) getTopTracksWithAlbums(uid string) ([]spotify.Track, []spotify.Album, error) {
 	acc, err := s.getAccountByUID(uid)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "[GetTopTracksWithAlbums]: unable to get user profile")
@@ -229,7 +229,7 @@ func (s *service) GetTopTracksWithAlbums(uid string) ([]*spotify.Track, []*spoti
 	return tracks, albums, nil
 }
 
-func (s *service) CreateTopTracksFlexMsg(tracks []*spotify.Track, albums []*spotify.Album) *message.Flex {
+func (s *service) createTopTracksFlexMsg(tracks []spotify.Track, albums []spotify.Album) *message.Flex {
 	AlbumIDMapImageURL := map[string]string{}
 	for _, album := range albums {
 		AlbumIDMapImageURL[album.ID] = album.Images[0].URL
@@ -242,12 +242,14 @@ func (s *service) CreateTopTracksFlexMsg(tracks []*spotify.Track, albums []*spot
 			artists = append(artists, a.Name)
 		}
 
-		box := message.BoxWithImage {
-			Header: track.Name,
-			Text: strings.Join(artists, ", "),
-			LeftText: strconv.Itoa(track.Duration),
+		minute := (track.Duration / 1000) / 60
+		second := (track.Duration / 1000) % 60
+		box := message.BoxWithImage{
+			Header:   track.Name,
+			Text:     strings.Join(artists, ", "),
+			LeftText: fmt.Sprintf("%v:%v", minute, second),
 			ImageURL: AlbumIDMapImageURL[track.Album.ID],
-			URL: track.ExternalURLs.URL,
+			URL:      track.ExternalURLs.URL,
 		}
 		boxes = append(boxes, box)
 	}
@@ -259,12 +261,12 @@ func (s *service) CreateTopTracksFlexMsg(tracks []*spotify.Track, albums []*spot
 		"My Top Tracks",
 		now.Format("02 January 2006"),
 		boxes,
-		)
+	)
 
 	return &flex
 }
 
-func (s *service) findUniqueAlbumIDsFromTracks(tracks []*spotify.Track)[]string {
+func (s *service) findUniqueAlbumIDsFromTracks(tracks []spotify.Track) []string {
 	albums := map[string]string{}
 	for _, track := range tracks {
 		name := track.Album.Name
@@ -273,7 +275,7 @@ func (s *service) findUniqueAlbumIDsFromTracks(tracks []*spotify.Track)[]string 
 	}
 
 	ids := []string{}
-	for _, id := range albums {
+	for id := range albums {
 		ids = append(ids, id)
 	}
 

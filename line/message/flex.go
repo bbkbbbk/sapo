@@ -160,7 +160,8 @@ func (b *BubbleReceipt) ToComponent() string {
 				  "text": "%s",
 				  "size": "xs",
 				  "color": "#969696",
-				  "wrap": true
+				  "wrap": true,
+  				  "offsetTop": "5px"
 				}`, b.Text)
 	bubble := fmt.Sprintf(`{
 				"type": "bubble",
@@ -212,14 +213,14 @@ func (b *BoxWithImage) ToComponent() string {
 				  "type": "text",
 				  "text": "%s",
 				  "color": "#969696",
-				  "size": "xs",
+				  "size": "xxs",
 				  "align": "end"
 				}`, b.LeftText)
 	text := fmt.Sprintf(`{
 				  "type": "text",
-				  "text": "%se",
+				  "text": "%s",
 				  "color": "#969696",
-				  "size": "xs"
+				  "size": "xxs"
 				}`, b.Text)
 	action := fmt.Sprintf(`{
                 "type": "uri",
@@ -230,13 +231,7 @@ func (b *BoxWithImage) ToComponent() string {
 			  "type": "box",
 			  "layout": "horizontal",
 			  "contents": [
-				{
-				  "type": "image",
-				  "url": "%s",
-				  "size": "50px",
-				  "align": "start",
-				  "aspectRatio": "1:1"
-				},
+				%s,
 				{
 				  "type": "box",
 				  "layout": "vertical",

@@ -36,9 +36,9 @@ type Service interface {
 	RequestAccessTokenFromRefreshToken(token string) (string, error)
 	GetUserProfile(token string) (*User, error)
 	GetPlaylist(token, id string) (*Playlist, error)
-	GetAlbums(token string, ids []string) ([]*Album, error)
-	GetTopArtists(token string) ([]*Artist, error)
-	GetTopTracks(token string) ([]*Track, error)
+	GetAlbums(token string, ids []string) ([]Album, error)
+	GetTopArtists(token string) ([]Artist, error)
+	GetTopTracks(token string) ([]Track, error)
 	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 }
 
@@ -96,7 +96,7 @@ func (s *service) makeAuthRequest(form url.Values) ([]byte, error) {
 		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to get response from spotify")
 	}
 
-	if !(res.StatusCode >= 200 && res.StatusCode <= 299) {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, errors.Wrap(err, "[makeAuthRequest]: unable to make a success request")
 	}
 
@@ -131,7 +131,7 @@ func (s *service) makeRequest(token, method, url string, reqBody io.Reader) ([]b
 		return nil, errors.Wrap(err, "[makeRequest]: unable to get response from spotify")
 	}
 
-	if !(res.StatusCode >= 200 && res.StatusCode <= 299) {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, errors.Wrap(err, "[makeRequest]: unable to make a success request")
 	}
 
@@ -216,15 +216,14 @@ func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
 		return nil, errors.Wrap(err, "[GetSeeds]: unable to make request")
 	}
 
-	var obj Paging
-	err = json.Unmarshal(res, &obj)
+	var items PlayingHistoryItems
+	err = json.Unmarshal(res, &items)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetSeeds]: unable to unmarshal response body")
 	}
 
 	seedTracks := []string{}
-	for i, item := range obj.Items {
-		history := item.(PlayingHistory)
+	for i, history := range items.PlayingHistories {
 		if i%10 == 0 {
 			seedTrack := history.Track.ID
 			seedTracks = append(seedTracks, seedTrack)
@@ -365,7 +364,7 @@ func (s *service) GetPlaylist(token, id string) (*Playlist, error) {
 	return &playlist, nil
 }
 
-func (s *service) GetTopArtists(token string) ([]*Artist, error) {
+func (s *service) GetTopArtists(token string) ([]Artist, error) {
 	spotifyURL := "https://api.spotify.com/v1/me/top/artists?limit=5&time_range=short_term"
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
@@ -373,22 +372,19 @@ func (s *service) GetTopArtists(token string) ([]*Artist, error) {
 		return nil, errors.Wrap(err, "[GetUserTopArtists]: unable to make request")
 	}
 
-	var obj Paging
-	err = json.Unmarshal(res, &obj)
+	var items ArtistItems
+	err = json.Unmarshal(res, &items)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetUserTopArtists]: unable to unmarshal response body")
 	}
 
-	artists := []*Artist{}
-	for _, item := range obj.Items {
-		artist := item.(Artist)
-		artists = append(artists, &artist)
-	}
+	artists := []Artist{}
+	artists = append(artists, items.Artists...)
 
 	return artists, nil
 }
 
-func (s *service) GetTopTracks(token string) ([]*Track, error) {
+func (s *service) GetTopTracks(token string) ([]Track, error) {
 	spotifyURL := "https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=short_term"
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
@@ -396,22 +392,19 @@ func (s *service) GetTopTracks(token string) ([]*Track, error) {
 		return nil, errors.Wrap(err, "[GetUserTopTracks]: unable to make request")
 	}
 
-	var obj Paging
-	err = json.Unmarshal(res, &obj)
+	var items TrackItems
+	err = json.Unmarshal(res, &items)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetUserTopTracks]: unable to unmarshal response body")
 	}
 
-	tracks := []*Track{}
-	for _, item := range obj.Items {
-		track := item.(Track)
-		tracks = append(tracks, &track)
-	}
+	tracks := []Track{}
+	tracks = append(tracks, items.Tracks...)
 
 	return tracks, nil
 }
 
-func (s *service) GetAlbums(token string, ids []string) ([]*Album, error) {
+func (s *service) GetAlbums(token string, ids []string) ([]Album, error) {
 	idsParam := strings.Join(ids, ",")
 	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/albums?ids=%s", idsParam)
 
@@ -420,17 +413,14 @@ func (s *service) GetAlbums(token string, ids []string) ([]*Album, error) {
 		return nil, errors.Wrap(err, "[GetAlbums]: unable to make request")
 	}
 
-	var obj Paging
-	err = json.Unmarshal(res, &obj)
+	var items Albums
+	err = json.Unmarshal(res, &items)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetAlbums]: unable to unmarshal response body")
 	}
 
-	albums := []*Album{}
-	for _, item := range obj.Items {
-		album := item.(Album)
-		albums = append(albums, &album)
-	}
+	albums := []Album{}
+	albums = append(albums, items.Items...)
 
 	return albums, nil
 }

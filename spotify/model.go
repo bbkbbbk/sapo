@@ -10,12 +10,13 @@ type User struct {
 
 type Track struct {
 	ID           string             `json:"id"`
-	Name         string             `json:"display_name"`
+	Name         string             `json:"name"`
 	Artists      []SimplifiedObject `json:"artists"`
 	Album        SimplifiedObject   `json:"album"`
 	Duration     int                `json:"duration_ms"`
 	PreviewURL   string             `json:"preview_url"`
 	ExternalURLs ExternalURLs       `json:"external_urls"`
+	URI          string             `json:"uri"`
 }
 
 type Artist struct {
@@ -23,6 +24,7 @@ type Artist struct {
 	Name         string       `json:"display_name"`
 	Images       []Image      `json:"images"`
 	ExternalURLs ExternalURLs `json:"external_urls"`
+	URI          string       `json:"uri"`
 }
 
 type Album struct {
@@ -30,9 +32,10 @@ type Album struct {
 	Name         string             `json:"display_name"`
 	Label        string             `json:"label"`
 	Artists      []SimplifiedObject `json:"artists"`
-	Tracks       []SimplifiedObject `json:"tracks"`
+	Tracks       []Track            `json:"tracks.items"`
 	Images       []Image            `json:"images"`
 	ExternalURLs ExternalURLs       `json:"external_urls"`
+	URI          string             `json:"uri"`
 }
 
 type Playlist struct {
@@ -41,6 +44,7 @@ type Playlist struct {
 	Description  string       `json:"description"`
 	Images       []Image      `json:"images"`
 	ExternalURLs ExternalURLs `json:"external_urls"`
+	URI          string       `json:"uri"`
 }
 
 type Image struct {
@@ -62,7 +66,11 @@ type SimplifiedObject struct {
 }
 
 type Tracks struct {
-	Items []SimplifiedObject `json:"tracks"`
+	Items []Track `json:"tracks"`
+}
+
+type Albums struct {
+	Items []Album `json:"albums"`
 }
 
 type PlayingHistory struct {
@@ -70,6 +78,18 @@ type PlayingHistory struct {
 	PlayedAt string           `json:"played_at"`
 }
 
-type Paging struct {
-	Items []interface{} `json:"items"`
+type PlayingHistoryItems struct {
+	PlayingHistories []PlayingHistory `json:"items"`
+}
+
+type TrackItems struct {
+	Tracks []Track `json:"items"`
+}
+
+type ArtistItems struct {
+	Artists []Artist `json:"items"`
+}
+
+type AlbumItems struct {
+	Albums []Album `json:"items"`
 }

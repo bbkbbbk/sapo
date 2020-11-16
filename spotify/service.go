@@ -21,10 +21,10 @@ const (
 	defaultTimeout = 30
 	scopes         = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
 
-	AuthState         = "spotify-auth-state"
+	AuthState                = "spotify-auth-state"
 	LimitCurrentlyPlayedSize = 50
-	LimitSeedSize     = 5
-	LimitPlaylistSize = 25
+	LimitSeedSize            = 5
+	LimitPlaylistSize        = 25
 )
 
 var (
@@ -233,7 +233,7 @@ func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
 	return seedTracks, nil
 }
 
-func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string, limit int) ([]string, error) {
+func (s *service) GetTracksBasedOnSeeds(token string, seeds []string, limit int) ([]Track, error) {
 	if len(seeds) > LimitSeedSize {
 		return nil, errorInvalidSeed
 	}
@@ -248,19 +248,16 @@ func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string, l
 		return nil, errors.Wrap(err, "[GetRecommendationsBasedOnSeeds]: unable to make request")
 	}
 
-	var tracks Tracks
-	err = json.Unmarshal(res, &tracks)
+	var items Tracks
+	err = json.Unmarshal(res, &items)
 	if err != nil {
 		return nil, errors.Wrap(err, "[GetRecommendationsBasedOnSeeds]: unable to unmarshal response body")
 	}
 
-	uris := []string{}
-	for _, track := range tracks.Items {
-		uri := track.URI
-		uris = append(uris, uri)
-	}
+	tracks := []Track{}
+	tracks = append(tracks, items.Items...)
 
-	return uris, nil
+	return tracks, nil
 }
 
 func (s *service) CreatePlaylistForUser(token, uid string) (string, error) {
@@ -311,7 +308,7 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
 	}
 
-	uris, err := s.GetRecommendationsBasedOnSeeds(token, seeds, LimitPlaylistSize)
+	tracks, err := s.GetTracksBasedOnSeeds(token, seeds, LimitPlaylistSize)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
 	}
@@ -321,12 +318,24 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to create playlist")
 	}
 
+	uris := s.getURIsFromTracks(tracks)
+
 	err = s.AddTracksToPlaylist(token, playlistId, uris)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to add track to a playlist")
 	}
 
 	return playlistId, nil
+}
+
+func (s *service) getURIsFromTracks(tracks []Track) []string {
+	uris := []string{}
+	for _, track := range tracks {
+		uri := track.URI
+		uris = append(uris, uri)
+	}
+
+	return uris
 }
 
 func (s *service) GetUserProfile(token string) (*User, error) {

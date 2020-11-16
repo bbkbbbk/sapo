@@ -28,6 +28,7 @@ const (
 )
 
 type Service interface {
+	Test(uid string) error
 	CreateAccount(uid, code string) error
 	GetSpotifyAuthURL(state string) string
 	ParseLINERequest(req *http.Request) ([]*linebot.Event, error)
@@ -230,7 +231,7 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) *message.Fle
 		playlist.Name,
 		playlist.Description,
 		buttonLabel,
-		playlist.ExternalURLs,
+		playlist.ExternalURLs.URL,
 		playlist.Images[0].URL,
 		defaultFlexColor,
 	)
@@ -283,9 +284,9 @@ func (s *service) createTopTracksFlexMsg(tracks []spotify.Track, albums []spotif
 		box := message.BubbleReceiptBox{
 			Header:   track.Name,
 			Text:     strings.Join(artists, ", "),
-			LeftText: fmt.Sprintf("%v:%v", minute, second),
+			LeftText: fmt.Sprintf("%d:%02d", minute, second),
 			ImageURL: AlbumIDMapImageURL[track.Album.ID],
-			URL:      track.ExternalURLs,
+			URL:      track.ExternalURLs.URL,
 		}
 		boxes = append(boxes, box)
 	}
@@ -344,7 +345,7 @@ func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Fl
 		bubble := message.NewBubblePlain(
 			artist.Name,
 			artist.Images[0].URL,
-			artist.ExternalURLs,
+			artist.ExternalURLs.URL,
 			defaultFlexColor,
 		)
 		bubbles = append(bubbles, bubble)
@@ -409,9 +410,17 @@ func (s *service) createTrackFlexMsg(track *spotify.Track, album *spotify.Album)
 		track.Name,
 		strings.Join(artists, ", "),
 		album.Images[0].URL,
-		track.ExternalURLs,
+		track.ExternalURLs.URL,
 		defaultFlexColor,
 	)
 
 	return &flex
+}
+
+func (s *service) Test(uid string) error {
+	//if err := s.lineService.PushFlexMsg(uid, *flex); err != nil {
+	//	return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
+	//}
+
+	return nil
 }

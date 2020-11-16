@@ -1,11 +1,11 @@
 package spotify
 
 type User struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"display_name"`
-	Email        string  `json:"email"`
-	Images       []Image `json:"images"`
-	ExternalURLs string  `json:"external_urls.spotify"`
+	ID           string       `json:"id"`
+	Name         string       `json:"display_name"`
+	Email        string       `json:"email"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type Track struct {
@@ -15,16 +15,20 @@ type Track struct {
 	Album        SimplifiedObject   `json:"album"`
 	Duration     int                `json:"duration_ms"`
 	PreviewURL   string             `json:"preview_url"`
-	ExternalURLs string             `json:"external_urls.spotify"`
+	ExternalURLs ExternalURLs       `json:"external_urls"`
 	URI          string             `json:"uri"`
 }
 
+type ExternalURLs struct {
+	URL string `json:"spotify"`
+}
+
 type Artist struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Images       []Image `json:"images"`
-	ExternalURLs string  `json:"external_urls.spotify"`
-	URI          string  `json:"uri"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
+	URI          string       `json:"uri"`
 }
 
 type Album struct {
@@ -34,17 +38,17 @@ type Album struct {
 	Artists      []SimplifiedObject `json:"artists"`
 	Tracks       []Track            `json:"tracks.items"`
 	Images       []Image            `json:"images"`
-	ExternalURLs string             `json:"external_urls.spotify"`
+	ExternalURLs ExternalURLs       `json:"external_urls"`
 	URI          string             `json:"uri"`
 }
 
 type Playlist struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	Images       []Image `json:"images"`
-	ExternalURLs string  `json:"external_urls.spotify"`
-	URI          string  `json:"uri"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Images       []Image      `json:"images"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
+	URI          string       `json:"uri"`
 }
 
 type Image struct {
@@ -55,10 +59,10 @@ type Image struct {
 
 // SimplifiedObject represents simplified version of track, artist, album, and playlist
 type SimplifiedObject struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	URI          string `json:"uri"`
-	ExternalURLs string `json:"external_urls.spotify"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	URI          string       `json:"uri"`
+	ExternalURLs ExternalURLs `json:"external_urls"`
 }
 
 type Tracks struct {

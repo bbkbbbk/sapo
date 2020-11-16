@@ -180,6 +180,7 @@ func (s *service) ReplyFlexMsg(replyToken string, flex message.Flex) error {
 			logrus.Warn(err)
 		}
 		logrus.Info(b)
+		logrus.Info(flex.ToFlex())
 	}
 
 	return nil
@@ -227,6 +228,7 @@ func (s *service) PushFlexMsg(uid string, flex message.Flex) error {
 			logrus.Warn(err)
 		}
 		logrus.Info(b)
+		logrus.Info(flex.ToFlex())
 	}
 
 	return nil

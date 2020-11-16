@@ -423,12 +423,13 @@ func (b *BubbleWithImage) ToComponent() string {
 							"type": "text",
 							"text": "%s",
 							"color": "#ffffff",
-							"size": "lg"
+							"size": "md"
 						  }`, b.Header)
 	text := fmt.Sprintf(`{
 							"type": "text",
 							"text": "%s",
-							"color": "#969696"
+							"color": "#969696",
+              				"size": "xs"
 						  }`, b.Text)
 	action := fmt.Sprintf(`{
 					  "type": "uri",
@@ -446,7 +447,7 @@ func (b *BubbleWithImage) ToComponent() string {
 						"type": "box",
 						"layout": "vertical",
 						"contents": [%s,%s],
-						"height": "80px",
+						"height": "60px",
 						"backgroundColor": "#%s",
 						"position": "absolute",
 						"offsetBottom": "0px",
@@ -471,7 +472,6 @@ func (b *BubbleWithImage) ToFlex() string {
 				  "altText": "%s",
 				  "contents": %s
 				}`, b.AltText, b.ToComponent())
-
 	return flex
 }
 

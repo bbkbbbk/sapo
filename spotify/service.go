@@ -35,12 +35,14 @@ type Service interface {
 	GetAuthURL(state string) string
 	RequestToken(code string) (string, string, error)
 	RequestAccessTokenFromRefreshToken(token string) (string, error)
+	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
 	GetUserProfile(token string) (*User, error)
 	GetPlaylist(token, id string) (*Playlist, error)
+	GetAlbum(token string, id string) (*Album, error)
 	GetAlbums(token string, ids []string) ([]Album, error)
 	GetTopArtists(token string, limit int) ([]Artist, error)
 	GetTopTracks(token string, limit int) ([]Track, error)
-	CreateRecommendedPlaylistForUser(token, uid string) (string, error)
+	GetRandomTrack(token string) (*Track, error)
 }
 
 type service struct {
@@ -310,7 +312,7 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 
 	tracks, err := s.GetTracksBasedOnSeeds(token, seeds, LimitPlaylistSize)
 	if err != nil {
-		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
+		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get tracks from seeds")
 	}
 
 	playlistId, err := s.CreatePlaylistForUser(token, uid)
@@ -431,4 +433,35 @@ func (s *service) GetAlbums(token string, ids []string) ([]Album, error) {
 	albums = append(albums, items.Items...)
 
 	return albums, nil
+}
+
+func (s *service) GetAlbum(token string, id string) (*Album, error) {
+	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/albums/%s", id)
+
+	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetAlbum]: unable to make request")
+	}
+
+	var album Album
+	err = json.Unmarshal(res, &album)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetAlbum]: unable to unmarshal response body")
+	}
+
+	return &album, nil
+}
+
+func (s *service) GetRandomTrack(token string) (*Track, error) {
+	seeds, err := s.GetCurrentTrackSeeds(token)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetRandomTrack]: unable to get seeds")
+	}
+
+	tracks, err := s.GetTracksBasedOnSeeds(token, seeds, 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "[GetRandomTrack]: unable to get tracks from seeds")
+	}
+
+	return &tracks[0], nil
 }

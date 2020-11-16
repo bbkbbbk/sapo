@@ -385,7 +385,7 @@ func (s *service) GetTopArtists(token string, limit int) ([]Artist, error) {
 }
 
 func (s *service) GetTopTracks(token string, limit int) ([]Track, error) {
-	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%v&time_range=medium_term", limit)
+	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/me/top/tracks?limit=%v&time_range=short_term", limit)
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {

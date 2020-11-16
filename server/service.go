@@ -100,7 +100,7 @@ func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -354,12 +354,12 @@ func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Fl
 
 func (s *service) createMyTopQuickReplies() *linebot.QuickReplyItems {
 	topTrack := linebot.NewQuickReplyButton(
-		"https://imgur.com/YGlhRj8",
+		"https://imgur.com/9NTGvBd",
 		linebot.NewMessageAction("My Top Tracks", "My Top Tracks"),
 	)
 
 	topArtist := linebot.NewQuickReplyButton(
-		"https://imgur.com/ZwMbYEy",
+		"https://imgur.com/ismcKha",
 		linebot.NewMessageAction("My Top Artists", "My Top Artists"),
 	)
 

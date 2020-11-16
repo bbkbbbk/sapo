@@ -14,18 +14,10 @@
     <script>
       const liffId = "1655240271-nKRloDyw"
 
-      function runApp() {
+      liff.init({ liffId: liffId }, () => {
         const messages = "Welcome :D"
         liff.sendMessages(messages)
         liff.closeWindow()
-      }
-
-      liff.init({ liffId: liffId }, () => {
-        if (liff.isLoggedIn()) {
-          runApp()
-        } else {
-          window.location = "https://liff.line.me/1655240271-nKRloDyw";
-        }
       }, err => console.error(err.code, error.message));
     </script>
   </body>

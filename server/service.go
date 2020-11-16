@@ -171,9 +171,15 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
 		}
 	case textEventRandom:
-		replyMsg := "Coming soon!"
-		if err := s.lineService.SendTextMessage(token, replyMsg); err != nil {
-			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
+		track, album, err := s.getRandomTrackWithAlbum(uid)
+		if err != nil {
+			return errors.Wrapf(err, "[textEventsHandler]: unable to create get random track for user id %s", uid)
+		}
+
+		flex := s.createTrackFlexMsg(track, album)
+
+		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
 		}
 	}
 
@@ -364,4 +370,41 @@ func (s *service) createMyTopQuickReplies() *linebot.QuickReplyItems {
 	)
 
 	return linebot.NewQuickReplyItems(topTrack, topArtist)
+}
+
+func (s *service) getRandomTrackWithAlbum(uid string) (*spotify.Track, *spotify.Album, error) {
+	acc, err := s.getAccountByUID(uid)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "[getRandomTrack]: unable to get user profile")
+	}
+	refreshToken := acc.RefreshToken
+
+	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "[getRandomTrack]: unable to request access token")
+	}
+
+	track, err := s.spotifyService.GetRandomTrack(accessToken)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "[getRandomTrack]: unable to get random track")
+	}
+
+	albumId := track.Album.ID
+	album, err := s.spotifyService.GetAlbum(accessToken, albumId)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "[getRandomTrack]: unable to get an album")
+	}
+
+	return track, album, nil
+}
+
+func (s *service) createTrackFlexMsg(track *spotify.Track, album *spotify.Album) *message.Flex {
+	flex := message.NewBubblePlain(
+		track.Name,
+		album.Images[0].URL,
+		track.ExternalURLs.URL,
+		defaultFlexColor,
+	)
+
+	return &flex
 }

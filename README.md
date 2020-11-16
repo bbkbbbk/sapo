@@ -1,3 +1,9 @@
+<p align="left">
+  <a href="https://lin.ee/mZkpHbg">
+    <img src="https://img.shields.io/badge/@266tzacy-%231ED760.svg?&style=for-the-badge&logo=line&logoColor=white" />
+  </a>
+</p>
+
 # sapo
 
 sapo, your friendly whale friend

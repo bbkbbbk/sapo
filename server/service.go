@@ -14,12 +14,15 @@ import (
 )
 
 const (
-	defaultTimeout   = 30
-	defaultFlexColor = "373C41CC"
+	defaultTimeout       = 30
+	defaultFlexColor     = "373C41CC"
+	defaultFlexLimit     = 5
+	defaultCarouselLimit = 10
 
 	textEventEcho           = "echo"
 	textEventCreatePlaylist = "create playlist"
 	textEventMyTopTracks    = "my top tracks"
+	textEventMyTopArtists   = "my top artists"
 )
 
 type Service interface {
@@ -29,6 +32,7 @@ type Service interface {
 	LINEEventsHandler(events []*linebot.Event) error
 	LINELinkUserToLoginRichMenu(uid string) error
 	LINELinkUserToDefaultRichMenu(uid string) error
+	Test(uid string) error
 }
 
 type service struct {
@@ -145,6 +149,17 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
 		}
+	case textEventMyTopArtists:
+		artists, err := s.getTopArtists(uid)
+		if err != nil {
+			return errors.Wrapf(err, "[textEventsHandler]: unable to get top artists for user id %s", uid)
+		}
+
+		flex := s.createCarouselTopArtists(artists)
+
+		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
+		}
 	}
 
 	return nil
@@ -214,7 +229,7 @@ func (s *service) getTopTracksWithAlbums(uid string) ([]spotify.Track, []spotify
 		return nil, nil, errors.Wrap(err, "[GetTopTracksWithAlbums]: unable to request access token")
 	}
 
-	tracks, err := s.spotifyService.GetTopTracks(accessToken)
+	tracks, err := s.spotifyService.GetTopTracks(accessToken, defaultFlexLimit)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "[GetTopTracksWithAlbums]: unable to get user's top tracks")
 	}
@@ -235,7 +250,7 @@ func (s *service) createTopTracksFlexMsg(tracks []spotify.Track, albums []spotif
 		AlbumIDMapImageURL[album.ID] = album.Images[0].URL
 	}
 
-	boxes := []message.BoxWithImage{}
+	boxes := []message.BubbleReceiptBox{}
 	for _, track := range tracks {
 		artists := []string{}
 		for _, a := range track.Artists {
@@ -244,7 +259,7 @@ func (s *service) createTopTracksFlexMsg(tracks []spotify.Track, albums []spotif
 
 		minute := (track.Duration / 1000) / 60
 		second := (track.Duration / 1000) % 60
-		box := message.BoxWithImage{
+		box := message.BubbleReceiptBox{
 			Header:   track.Name,
 			Text:     strings.Join(artists, ", "),
 			LeftText: fmt.Sprintf("%v:%v", minute, second),
@@ -280,4 +295,59 @@ func (s *service) findUniqueAlbumIDsFromTracks(tracks []spotify.Track) []string 
 	}
 
 	return ids
+}
+
+func (s *service) getTopArtists(uid string) ([]spotify.Artist, error) {
+	acc, err := s.getAccountByUID(uid)
+	if err != nil {
+		return nil, errors.Wrap(err, "[getTopArtists]: unable to get user profile")
+	}
+	refreshToken := acc.RefreshToken
+
+	accessToken, err := s.spotifyService.RequestAccessTokenFromRefreshToken(refreshToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "[getTopArtists]: unable to request access token")
+	}
+
+	artists, err := s.spotifyService.GetTopArtists(accessToken, defaultCarouselLimit)
+	if err != nil {
+		return nil, errors.Wrap(err, "[getTopArtists]: unable to get user's top artists")
+	}
+
+	return artists, nil
+}
+
+func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Flex {
+	bubbles := []message.Flex{}
+	for _, artist := range artists {
+		bubble := message.NewBubblePlain(
+			artist.Name,
+			artist.Images[0].URL,
+			artist.ExternalURLs.URL,
+			defaultFlexColor,
+		)
+		bubbles = append(bubbles, bubble)
+	}
+
+	carousel := message.NewCarousel(
+		"My Top Artists",
+		bubbles,
+	)
+
+	return &carousel
+}
+
+func (s *service) Test(uid string) error {
+	artists, err := s.getTopArtists(uid)
+	if err != nil {
+		return errors.Wrapf(err, "[textEventsHandler]: unable to get top artists for user id %s", uid)
+	}
+
+	flex := s.createCarouselTopArtists(artists)
+
+	if err := s.lineService.PushFlexMsg(uid, *flex); err != nil {
+		return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
+	}
+
+	return nil
 }

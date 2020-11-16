@@ -230,7 +230,7 @@ func (s *service) createPlaylistFlexMsg(playlist *spotify.Playlist) *message.Fle
 		playlist.Name,
 		playlist.Description,
 		buttonLabel,
-		playlist.ExternalURLs.URL,
+		playlist.ExternalURLs,
 		playlist.Images[0].URL,
 		defaultFlexColor,
 	)
@@ -285,7 +285,7 @@ func (s *service) createTopTracksFlexMsg(tracks []spotify.Track, albums []spotif
 			Text:     strings.Join(artists, ", "),
 			LeftText: fmt.Sprintf("%v:%v", minute, second),
 			ImageURL: AlbumIDMapImageURL[track.Album.ID],
-			URL:      track.ExternalURLs.URL,
+			URL:      track.ExternalURLs,
 		}
 		boxes = append(boxes, box)
 	}
@@ -344,7 +344,7 @@ func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Fl
 		bubble := message.NewBubblePlain(
 			artist.Name,
 			artist.Images[0].URL,
-			artist.ExternalURLs.URL,
+			artist.ExternalURLs,
 			defaultFlexColor,
 		)
 		bubbles = append(bubbles, bubble)
@@ -402,7 +402,7 @@ func (s *service) createTrackFlexMsg(track *spotify.Track, album *spotify.Album)
 	flex := message.NewBubblePlain(
 		track.Name,
 		album.Images[0].URL,
-		track.ExternalURLs.URL,
+		track.ExternalURLs,
 		defaultFlexColor,
 	)
 

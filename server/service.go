@@ -361,12 +361,12 @@ func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Fl
 
 func (s *service) createMyTopQuickReplies() *linebot.QuickReplyItems {
 	topTrack := linebot.NewQuickReplyButton(
-		"https://i.imgur.com/9NTGvBd.png",
+		"https://i.imgur.com/hO2j2ei.png",
 		linebot.NewMessageAction("My Top Tracks", "My Top Tracks"),
 	)
 
 	topArtist := linebot.NewQuickReplyButton(
-		"https://i.imgur.com/ismcKha.png",
+		"https://i.imgur.com/oCsYxiN.png",
 		linebot.NewMessageAction("My Top Artists", "My Top Artists"),
 	)
 

@@ -56,7 +56,7 @@ func (b *BubbleWithButton) ToComponent() string {
 							"type": "text",
 							"text": "%s",
 							"color": "#969696",
-							"size": "xxs",
+							"size": "xxs"
 						  }
 						]
 					  }`, b.Text)

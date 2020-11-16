@@ -22,6 +22,7 @@ const (
 type Service interface {
 	ParseRequest(req *http.Request) ([]*linebot.Event, error)
 	SendTextMessage(msg, token string) error
+	SendTextMessageWithQuickReplies(token, msg string, quickReplies *linebot.QuickReplyItems) error
 	SendFlexMessage(token string, msg *linebot.FlexMessage) error
 	LinkUserToLoginRichMenu(uid string) error
 	LinkUserToDefaultRichMenu(uid string) error
@@ -66,6 +67,16 @@ func (s *service) SendTextMessage(token, msg string) error {
 	_, err := s.lineClient.ReplyMessage(token, replyMsg).Do()
 	if err != nil {
 		return errors.Wrap(err, "[SendTextMessage]: unable to send a reply text message")
+	}
+
+	return nil
+}
+
+func (s *service) SendTextMessageWithQuickReplies(token, msg string, quickReplies *linebot.QuickReplyItems) error {
+	replyMsg := linebot.NewTextMessage(msg).WithQuickReplies(quickReplies)
+	_, err := s.lineClient.ReplyMessage(token, replyMsg).Do()
+	if err != nil {
+		return errors.Wrap(err, "[SendTextMessageWithQuickReplies]: unable to send a reply text message")
 	}
 
 	return nil

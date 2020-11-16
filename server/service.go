@@ -20,9 +20,11 @@ const (
 	defaultCarouselLimit = 10
 
 	textEventEcho           = "echo"
-	textEventCreatePlaylist = "create playlist"
+	textEventMyTop          = "my top"
 	textEventMyTopTracks    = "my top tracks"
 	textEventMyTopArtists   = "my top artists"
+	textEventCreatePlaylist = "playlist for me"
+	textEventRandom         = "random"
 )
 
 type Service interface {
@@ -32,7 +34,6 @@ type Service interface {
 	LINEEventsHandler(events []*linebot.Event) error
 	LINELinkUserToLoginRichMenu(uid string) error
 	LINELinkUserToDefaultRichMenu(uid string) error
-	Test(uid string) error
 }
 
 type service struct {
@@ -99,7 +100,7 @@ func (s *service) LINEEventsHandler(events []*linebot.Event) error {
 			}
 		}
 	}
-
+	
 	return nil
 }
 
@@ -122,20 +123,18 @@ func (s *service) LINELinkUserToDefaultRichMenu(uid string) error {
 }
 
 func (s *service) textEventsHandler(uid, msg, token string) error {
+	msg = strings.ToLower(msg)
+
 	switch msg {
 	case textEventEcho:
 		if err := s.lineService.SendTextMessage(token, msg); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
-	case textEventCreatePlaylist:
-		playlist, err := s.createRecommendedPlaylistForUser(uid)
-		if err != nil {
-			return errors.Wrapf(err, "[textEventsHandler]: unable to create recommended playlist to user id %s", uid)
-		}
+	case textEventMyTop:
+		replyMsg := "Choose My Top Tracks or My Top Artist"
+		items := s.createMyTopQuickReplies()
 
-		flex := s.createPlaylistFlexMsg(playlist)
-
-		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
+		if err := s.lineService.SendTextMessageWithQuickReplies(token, replyMsg, items); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
 		}
 	case textEventMyTopTracks:
@@ -159,6 +158,22 @@ func (s *service) textEventsHandler(uid, msg, token string) error {
 
 		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
 			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
+		}
+	case textEventCreatePlaylist:
+		playlist, err := s.createRecommendedPlaylistForUser(uid)
+		if err != nil {
+			return errors.Wrapf(err, "[textEventsHandler]: unable to create recommended playlist to user id %s", uid)
+		}
+
+		flex := s.createPlaylistFlexMsg(playlist)
+
+		if err := s.lineService.ReplyFlexMsg(token, *flex); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
+		}
+	case textEventRandom:
+		replyMsg := "Coming soon!"
+		if err := s.lineService.SendTextMessage(token, replyMsg); err != nil {
+			return errors.Wrap(err, "[textEventsHandler]: unable to send message")
 		}
 	}
 
@@ -337,17 +352,16 @@ func (s *service) createCarouselTopArtists(artists []spotify.Artist) *message.Fl
 	return &carousel
 }
 
-func (s *service) Test(uid string) error {
-	artists, err := s.getTopArtists(uid)
-	if err != nil {
-		return errors.Wrapf(err, "[textEventsHandler]: unable to get top artists for user id %s", uid)
-	}
+func (s *service) createMyTopQuickReplies() *linebot.QuickReplyItems {
+	topTrack := linebot.NewQuickReplyButton(
+		"https://imgur.com/YGlhRj8",
+		linebot.NewMessageAction("My Top Tracks", "My Top Tracks"),
+	)
 
-	flex := s.createCarouselTopArtists(artists)
+	topArtist := linebot.NewQuickReplyButton(
+		"https://imgur.com/ZwMbYEy",
+		linebot.NewMessageAction("My Top Artists", "My Top Artists"),
+	)
 
-	if err := s.lineService.PushFlexMsg(uid, *flex); err != nil {
-		return errors.Wrap(err, "[textEventsHandler]: unable to send flex message")
-	}
-
-	return nil
+	return linebot.NewQuickReplyItems(topTrack, topArtist)
 }

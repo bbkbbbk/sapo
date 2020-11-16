@@ -25,12 +25,14 @@ var (
 )
 
 type Handler struct {
-	service Service
+	service          Service
+	loginCallBackURL string
 }
 
-func NewHandler(s Service) Handler {
+func NewHandler(s Service, callbackUrl string) Handler {
 	return Handler{
-		service: s,
+		service:          s,
+		loginCallBackURL: callbackUrl,
 	}
 }
 
@@ -112,7 +114,7 @@ func (h *Handler) SpotifyCallback(c echo.Context) error {
 		return h.returnError(errors.Wrap(err, "[SpotifyLoginCallback]: unable to link user to rich menu"))
 	}
 
-	return c.JSON(http.StatusOK, "login successfully welcome to sapo :D")
+	return c.Redirect(302, h.loginCallBackURL)
 }
 
 func (h *Handler) Test(c echo.Context) error {

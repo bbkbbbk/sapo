@@ -70,7 +70,7 @@ func main() {
 
 	repository := server.NewRepository(db)
 	service := server.NewService(basedURL, lineService, spotifyService, repository)
-	serverHandler := server.NewHandler(service)
+	serverHandler := server.NewHandler(service, os.Getenv("LIFF_LOGIN_CALLBACK_URL"))
 	server.RoutesRegister(e, serverHandler)
 
 	port := ":" + os.Getenv("APP_PORT")

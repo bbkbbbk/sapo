@@ -22,6 +22,7 @@ const (
 	scopes         = "user-read-recently-played playlist-modify-public playlist-read-collaborative user-read-recently-played user-top-read user-library-read"
 
 	AuthState         = "spotify-auth-state"
+	LimitCurrentlyPlayedSize = 50
 	LimitSeedSize     = 5
 	LimitPlaylistSize = 25
 )
@@ -209,7 +210,7 @@ func (s *service) RequestAccessTokenFromRefreshToken(token string) (string, erro
 }
 
 func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
-	spotifyURL := "https://api.spotify.com/v1/me/player/recently-played?limit=50"
+	spotifyURL := fmt.Sprintf("https://api.spotify.com/v1/me/player/recently-played?limit=%v", LimitCurrentlyPlayedSize)
 
 	res, err := s.makeRequest(token, http.MethodGet, spotifyURL, nil)
 	if err != nil {
@@ -223,23 +224,21 @@ func (s *service) GetCurrentTrackSeeds(token string) ([]string, error) {
 	}
 
 	seedTracks := []string{}
-	for i, history := range items.PlayingHistories {
-		if i%10 == 0 {
-			seedTrack := history.Track.ID
-			seedTracks = append(seedTracks, seedTrack)
-		}
+	for i := 0; i < LimitCurrentlyPlayedSize; i += 10 {
+		history := items.PlayingHistories[i]
+		seedTrack := history.Track.ID
+		seedTracks = append(seedTracks, seedTrack)
 	}
 
 	return seedTracks, nil
 }
 
-func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string) ([]string, error) {
+func (s *service) GetRecommendationsBasedOnSeeds(token string, seeds []string, limit int) ([]string, error) {
 	if len(seeds) > LimitSeedSize {
 		return nil, errorInvalidSeed
 	}
 
 	spotifyURL := "https://api.spotify.com/v1/recommendations"
-	limit := LimitPlaylistSize
 	seedTracks := strings.Join(seeds, ",")
 
 	path := fmt.Sprintf("%s?limit=%d&seed_tracks=%s", spotifyURL, limit, seedTracks)
@@ -312,7 +311,7 @@ func (s *service) CreateRecommendedPlaylistForUser(token, uid string) (string, e
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get seeds")
 	}
 
-	uris, err := s.GetRecommendationsBasedOnSeeds(token, seeds)
+	uris, err := s.GetRecommendationsBasedOnSeeds(token, seeds, LimitPlaylistSize)
 	if err != nil {
 		return "", errors.Wrap(err, "[CreateRecommendedPlaylistForUser]: unable to get uris from seeds")
 	}

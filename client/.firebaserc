@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "sapo-liff"
+  },
+  "targets": {
+    "sapo-liff": {
+      "hosting": {
+        "login": [
+          "sapo-liff"
+        ],
+        "redirect": [
+          "sapo-close-liff"
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to sapo</title>
+    <script defer src="/__/firebase/8.0.2/firebase-app.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script src="https://static.line-scdn.net/liff/edge/versions/2.3.0/sdk.js"></script>
+    <style media="screen">
+    </style>
+  </head>
+  <body>
+    <script>
+      const liffId = "1655240271-nKRloDyw"
+
+      function runApp() {
+        const messages = "Welcome :D"
+        liff.sendMessages(messages)
+        liff.closeWindow()
+      }
+
+      liff.init({ liffId: liffId }, () => {
+        if (liff.isLoggedIn()) {
+          runApp()
+        } else {
+          window.location = "https://liff.line.me/1655240271-nKRloDyw";
+        }
+      }, err => console.error(err.code, error.message));
+    </script>
+  </body>
+</html>

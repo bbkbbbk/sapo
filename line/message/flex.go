@@ -391,3 +391,90 @@ func (c *Carousel) ToFlex() string {
 func (c *Carousel) ToJson() []byte {
 	return []byte(c.ToFlex())
 }
+
+type BubbleWithImage struct {
+	AltText   string
+	Header    string
+	Text      string
+	ImageURL  string
+	URLAction string
+	Color     string
+}
+
+func NewBubbleWithImage(altText, header, text, imageUrl, url, color string) Flex {
+	return &BubbleWithImage{
+		AltText:   altText,
+		Header:    header,
+		Text:      text,
+		ImageURL:  imageUrl,
+		URLAction: url,
+		Color:     color,
+	}
+}
+
+func (b *BubbleWithImage) ToComponent() string {
+	cover := fmt.Sprintf(`{
+						"type": "image",
+						"url": "%s",
+						"size": "full",
+						"aspectMode": "cover"
+					  }`, b.ImageURL)
+	header := fmt.Sprintf(`{
+							"type": "text",
+							"text": "%s",
+							"color": "#ffffff",
+							"size": "lg"
+						  }`, b.Header)
+	text := fmt.Sprintf(`{
+							"type": "text",
+							"text": "%s",
+							"color": "#969696"
+						  }`, b.Text)
+	action := fmt.Sprintf(`{
+					  "type": "uri",
+					  "label": "action",
+					  "uri": "%s"
+					}`, b.URLAction)
+	bubble := fmt.Sprintf(`{
+				  "type": "bubble",
+				  "size": "kilo",
+				  "body": {
+					"type": "box",
+					"layout": "vertical",
+					"contents": [%s,
+					  {
+						"type": "box",
+						"layout": "vertical",
+						"contents": [%s,%s],
+						"height": "80px",
+						"backgroundColor": "#%s",
+						"position": "absolute",
+						"offsetBottom": "0px",
+						"offsetStart": "0px",
+						"offsetEnd": "0px",
+						"justifyContent": "center",
+						"alignItems": "center"
+					  }
+					],
+					"paddingAll": "0px",
+					"action": %s
+				  }
+				}`, cover, header, text, b.Color, action)
+
+	return bubble
+}
+
+func (b *BubbleWithImage) ToFlex() string {
+	flex := fmt.Sprintf(
+		`{
+				  "type": "flex",
+				  "altText": "%s",
+				  "contents": %s
+				}`, b.AltText, b.ToComponent())
+
+	return flex
+}
+
+func (b *BubbleWithImage) ToJson() []byte {
+	return []byte(b.ToFlex())
+}

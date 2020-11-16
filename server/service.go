@@ -399,8 +399,15 @@ func (s *service) getRandomTrackWithAlbum(uid string) (*spotify.Track, *spotify.
 }
 
 func (s *service) createTrackFlexMsg(track *spotify.Track, album *spotify.Album) *message.Flex {
-	flex := message.NewBubblePlain(
+	artists := []string{}
+	for _, a := range track.Artists {
+		artists = append(artists, a.Name)
+	}
+
+	flex := message.NewBubbleWithImage(
+		"Random Track For You!",
 		track.Name,
+		strings.Join(artists, ", "),
 		album.Images[0].URL,
 		track.ExternalURLs,
 		defaultFlexColor,

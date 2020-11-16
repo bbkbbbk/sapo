@@ -156,19 +156,21 @@ func (s *service) ReplyFlexMsg(replyToken string, flex message.Flex) error {
 		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to make a success request")
 	}
 
-	logrus.Info(res.StatusCode)
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		logrus.Warn(err)
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		logrus.Info(res.StatusCode)
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			logrus.Warn(err)
+		}
+
+		var b interface{}
+		err = json.Unmarshal(body, &b)
+		if err != nil {
+			logrus.Warn(err)
+		}
+		logrus.Info(b)
 	}
 
-	var b interface{}
-	err = json.Unmarshal(body, &b)
-	if err != nil {
-		logrus.Warn(err)
-	}
-
-	logrus.Info(b)
 	return nil
 }
 
@@ -199,6 +201,21 @@ func (s *service) PushFlexMsg(uid string, flex message.Flex) error {
 	}()
 	if err != nil {
 		return errors.Wrap(err, "[SendReplyFlexMsg]: unable to make a success request")
+	}
+
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		logrus.Info(res.StatusCode)
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			logrus.Warn(err)
+		}
+
+		var b interface{}
+		err = json.Unmarshal(body, &b)
+		if err != nil {
+			logrus.Warn(err)
+		}
+		logrus.Info(b)
 	}
 
 	return nil
